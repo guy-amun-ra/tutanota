@@ -140,6 +140,9 @@ export class PostLoginActions implements IPostLoginAction {
 		// Needs to be called after UsageTestModel.init() if the UsageOptInNews is live! (its isShown() requires an initialized UsageTestModel)
 		await locator.newsModel.loadNewsIds()
 
+		// continue IMAP import
+		await locator.imapImporterFacade.continueImport()
+
 		// Redraw to render usage tests and news, among other things that may have changed.
 		m.redraw()
 	}
@@ -223,26 +226,25 @@ export class PostLoginActions implements IPostLoginAction {
 					return locator.entityClient.load(CustomerPropertiesTypeRef, neverNull(customer.properties)).then((properties) => {
 						return locator.logins
 							.getUserController()
-							.loadCustomerInfo()
-							.then((customerInfo) => {
-								if (
-									properties.lastUpgradeReminder == null &&
-									customerInfo.creationTime.getTime() + Const.UPGRADE_REMINDER_INTERVAL < new Date().getTime()
-								) {
-									let message = lang.get("premiumOffer_msg")
-									let title = lang.get("upgradeReminderTitle_msg")
-									return Dialog.reminder(title, message, InfoLink.PremiumProBusiness)
-										.then((confirm) => {
-											if (confirm) {
-												import("../subscription/UpgradeSubscriptionWizard").then((wizard) => wizard.showUpgradeWizard())
-											}
-										})
-										.then(() => {
-											properties.lastUpgradeReminder = new Date()
-											locator.entityClient.update(properties).catch(ofClass(LockedError, noOp))
-										})
-								}
-							})
+							.loadCustomerInfo().then((customerInfo) => {
+							if (
+								properties.lastUpgradeReminder == null &&
+								customerInfo.creationTime.getTime() + Const.UPGRADE_REMINDER_INTERVAL < new Date().getTime()
+							) {
+								let message = lang.get("premiumOffer_msg")
+								let title = lang.get("upgradeReminderTitle_msg")
+								return Dialog.reminder(title, message, InfoLink.PremiumProBusiness)
+											 .then((confirm) => {
+												 if (confirm) {
+													 import("../subscription/UpgradeSubscriptionWizard").then((wizard) => wizard.showUpgradeWizard())
+												 }
+											 })
+											 .then(() => {
+												 properties.lastUpgradeReminder = new Date()
+												 locator.entityClient.update(properties).catch(ofClass(LockedError, noOp))
+											 })
+							}
+						})
 					})
 				})
 		} else {

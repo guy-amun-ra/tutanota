@@ -8,11 +8,14 @@ import { DesktopFacadeSendDispatcher } from "../../native/common/generatedipc/De
 import { CommonNativeFacadeSendDispatcher } from "../../native/common/generatedipc/CommonNativeFacadeSendDispatcher.js"
 import { DesktopCommonSystemFacade } from "../DesktopCommonSystemFacade.js"
 import { InterWindowEventFacadeSendDispatcher } from "../../native/common/generatedipc/InterWindowEventFacadeSendDispatcher.js"
+import { ImapImportFacade } from "../../native/common/generatedipc/ImapImportFacade.js"
+import { ImapImportFacadeSendDispatcher } from "../../native/common/generatedipc/ImapImportFacadeSendDispatcher.js"
 
 export interface SendingFacades {
 	desktopFacade: DesktopFacade
 	commonNativeFacade: CommonNativeFacade
 	interWindowEventSender: InterWindowEventFacadeSendDispatcher
+	imapImportFacade: ImapImportFacade
 }
 
 const primaryIpcConfig: IpcConfig<"to-main", "to-renderer"> = {
@@ -25,7 +28,8 @@ export type FacadeHandler = (message: Request<"facade">) => Promise<any>
 export type FacadeHandlerFactory = (window: ApplicationWindow) => FacadeHandler
 
 export class RemoteBridge {
-	constructor(private readonly dispatcherFactory: DispatcherFactory, private readonly facadeHandlerFactory: FacadeHandlerFactory) {}
+	constructor(private readonly dispatcherFactory: DispatcherFactory, private readonly facadeHandlerFactory: FacadeHandlerFactory) {
+	}
 
 	createBridge(window: ApplicationWindow): SendingFacades {
 		const webContents = window._browserWindow.webContents
@@ -50,6 +54,7 @@ export class RemoteBridge {
 			desktopFacade: new DesktopFacadeSendDispatcher(nativeInterface),
 			commonNativeFacade: new CommonNativeFacadeSendDispatcher(nativeInterface),
 			interWindowEventSender: new InterWindowEventFacadeSendDispatcher(nativeInterface),
+			imapImportFacade: new ImapImportFacadeSendDispatcher(nativeInterface)
 		}
 	}
 

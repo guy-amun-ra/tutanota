@@ -1,5 +1,6 @@
 /* generated file, don't edit. */
 
+
 export interface RsaPublicKey {
 	readonly version: number
 	readonly keyLength: number

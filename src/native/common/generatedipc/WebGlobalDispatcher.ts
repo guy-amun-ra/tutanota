@@ -1,37 +1,45 @@
 /* generated file, don't edit. */
 
-import { CommonNativeFacade } from "./CommonNativeFacade.js"
-import { CommonNativeFacadeReceiveDispatcher } from "./CommonNativeFacadeReceiveDispatcher.js"
-import { DesktopFacade } from "./DesktopFacade.js"
-import { DesktopFacadeReceiveDispatcher } from "./DesktopFacadeReceiveDispatcher.js"
-import { InterWindowEventFacade } from "./InterWindowEventFacade.js"
-import { InterWindowEventFacadeReceiveDispatcher } from "./InterWindowEventFacadeReceiveDispatcher.js"
-import { MobileFacade } from "./MobileFacade.js"
-import { MobileFacadeReceiveDispatcher } from "./MobileFacadeReceiveDispatcher.js"
+
+import {CommonNativeFacade} from "./CommonNativeFacade.js"
+import {CommonNativeFacadeReceiveDispatcher} from "./CommonNativeFacadeReceiveDispatcher.js"
+import {DesktopFacade} from "./DesktopFacade.js"
+import {DesktopFacadeReceiveDispatcher} from "./DesktopFacadeReceiveDispatcher.js"
+import {ImapImportFacade} from "./ImapImportFacade.js"
+import {ImapImportFacadeReceiveDispatcher} from "./ImapImportFacadeReceiveDispatcher.js"
+import {InterWindowEventFacade} from "./InterWindowEventFacade.js"
+import {InterWindowEventFacadeReceiveDispatcher} from "./InterWindowEventFacadeReceiveDispatcher.js"
+import {MobileFacade} from "./MobileFacade.js"
+import {MobileFacadeReceiveDispatcher} from "./MobileFacadeReceiveDispatcher.js"
 
 export class WebGlobalDispatcher {
-	private readonly commonNativeFacade: CommonNativeFacadeReceiveDispatcher
-	private readonly desktopFacade: DesktopFacadeReceiveDispatcher
-	private readonly interWindowEventFacade: InterWindowEventFacadeReceiveDispatcher
-	private readonly mobileFacade: MobileFacadeReceiveDispatcher
+	private readonly commonNativeFacade : CommonNativeFacadeReceiveDispatcher
+	private readonly desktopFacade : DesktopFacadeReceiveDispatcher
+	private readonly imapImportFacade : ImapImportFacadeReceiveDispatcher
+	private readonly interWindowEventFacade : InterWindowEventFacadeReceiveDispatcher
+	private readonly mobileFacade : MobileFacadeReceiveDispatcher
 	constructor(
-		commonNativeFacade: CommonNativeFacade,
-		desktopFacade: DesktopFacade,
-		interWindowEventFacade: InterWindowEventFacade,
-		mobileFacade: MobileFacade,
+		commonNativeFacade : CommonNativeFacade,
+		desktopFacade : DesktopFacade,
+		imapImportFacade : ImapImportFacade,
+		interWindowEventFacade : InterWindowEventFacade,
+		mobileFacade : MobileFacade,
 	) {
 		this.commonNativeFacade = new CommonNativeFacadeReceiveDispatcher(commonNativeFacade)
 		this.desktopFacade = new DesktopFacadeReceiveDispatcher(desktopFacade)
+		this.imapImportFacade = new ImapImportFacadeReceiveDispatcher(imapImportFacade)
 		this.interWindowEventFacade = new InterWindowEventFacadeReceiveDispatcher(interWindowEventFacade)
 		this.mobileFacade = new MobileFacadeReceiveDispatcher(mobileFacade)
 	}
-
+	
 	async dispatch(facadeName: string, methodName: string, args: Array<any>) {
 		switch (facadeName) {
 			case "CommonNativeFacade":
 				return this.commonNativeFacade.dispatch(methodName, args)
 			case "DesktopFacade":
 				return this.desktopFacade.dispatch(methodName, args)
+			case "ImapImportFacade":
+				return this.imapImportFacade.dispatch(methodName, args)
 			case "InterWindowEventFacade":
 				return this.interWindowEventFacade.dispatch(methodName, args)
 			case "MobileFacade":

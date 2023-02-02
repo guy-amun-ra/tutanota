@@ -1,3 +1,4 @@
 /* generated file, don't edit. */
 
-export { Result } from "electron"
+
+export {Result} from "electron"

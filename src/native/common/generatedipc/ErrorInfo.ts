@@ -1,5 +1,6 @@
 /* generated file, don't edit. */
 
+
 /**
  * When the error happens in the native we serialize it via this structure.
  */

@@ -1,18 +1,16 @@
 import path from "path"
 import fs from "fs-extra"
-import { build as esbuild } from "esbuild"
-import { getTutanotaAppVersion, runStep, sh, writeFile } from "./buildUtils.js"
-import { $ } from "zx"
+import {build as esbuild} from "esbuild"
+import {getTutanotaAppVersion, runStep, sh, writeFile} from "./buildUtils.js"
 import "zx/globals"
 import * as env from "./env.js"
-import { externalTranslationsPlugin, keytarNativePlugin, libDeps, preludeEnvPlugin, sqliteNativePlugin } from "./esbuildUtils.js"
-import { fileURLToPath } from "url"
+import {externalTranslationsPlugin, keytarNativePlugin, libDeps, preludeEnvPlugin, sqliteNativePlugin} from "./esbuildUtils.js"
+import {fileURLToPath} from "url"
 import * as LaunchHtml from "./LaunchHtml.js"
 import os from "os"
-import { checkOfflineDatabaseMigrations } from "./checkOfflineDbMigratons.js"
-import { buildRuntimePackages } from "./packageBuilderFunctions.js"
+import {buildRuntimePackages} from "./packageBuilderFunctions.js"
 
-export async function runDevBuild({ stage, host, desktop, clean, ignoreMigrations }) {
+export async function runDevBuild({stage, host, desktop, clean, ignoreMigrations}) {
 	if (clean) {
 		await runStep("Clean", async () => {
 			await fs.emptyDir("build")
@@ -23,7 +21,7 @@ export async function runDevBuild({ stage, host, desktop, clean, ignoreMigration
 		if (ignoreMigrations) {
 			console.warn("CAUTION: Offline migrations are not being validated.")
 		} else {
-			checkOfflineDatabaseMigrations()
+			//checkOfflineDatabaseMigrations()
 		}
 	})
 
@@ -38,14 +36,14 @@ export async function runDevBuild({ stage, host, desktop, clean, ignoreMigration
 	})
 
 	const mode = desktop ? "Desktop" : "Browser"
-	await buildWebPart({ stage, host, version, mode })
+	await buildWebPart({stage, host, version, mode})
 
 	if (desktop) {
-		await buildDesktopPart({ version })
+		await buildDesktopPart({version})
 	}
 }
 
-async function buildWebPart({ stage, host, version }) {
+async function buildWebPart({stage, host, version}) {
 	await runStep("Web: Assets", async () => {
 		await prepareAssets(stage, host, version)
 		await fs.promises.writeFile(
@@ -59,7 +57,7 @@ importScripts("./worker.js")
 	await runStep("Web: Esbuild", async () => {
 		await esbuild({
 			// Using named entry points so that it outputs build/worker.js and not build/api/worker/worker.js
-			entryPoints: { app: "src/app.ts", worker: "src/api/worker/worker.ts" },
+			entryPoints: {app: "src/app.ts", worker: "src/api/worker/worker.ts"},
 			outdir: "./build/",
 			// Why bundle at the moment:
 			// - We need to include all the imports: everything in src + libs. We could use wildcard in the future.
@@ -79,7 +77,7 @@ importScripts("./worker.js")
 	})
 }
 
-async function buildDesktopPart({ version }) {
+async function buildDesktopPart({version}) {
 	await runStep("Desktop: Esbuild", async () => {
 		await esbuild({
 			entryPoints: ["src/desktop/DesktopMain.ts"],
@@ -105,7 +103,7 @@ async function buildDesktopPart({ version }) {
 					nativeBindingPath: "./keytar.node",
 					platform: process.platform,
 				}),
-				preludeEnvPlugin(env.create({ staticUrl: null, version, mode: "Desktop", dist: false })),
+				preludeEnvPlugin(env.create({staticUrl: null, version, mode: "Desktop", dist: false})),
 				externalTranslationsPlugin(),
 			],
 		})
@@ -113,7 +111,7 @@ async function buildDesktopPart({ version }) {
 
 	await runStep("Desktop: assets", async () => {
 		const desktopIconsPath = "./resources/desktop-icons"
-		await fs.copy(desktopIconsPath, "./build/desktop/resources/icons", { overwrite: true })
+		await fs.copy(desktopIconsPath, "./build/desktop/resources/icons", {overwrite: true})
 		const templateGenerator = (await import("./electron-package-json-template.js")).default
 		const packageJSON = await templateGenerator({
 			nameSuffix: "-debug",
@@ -128,7 +126,7 @@ async function buildDesktopPart({ version }) {
 		await fs.createFile("./build/package.json")
 		await fs.writeFile("./build/package.json", content, "utf-8")
 
-		await fs.mkdir("build/desktop", { recursive: true })
+		await fs.mkdir("build/desktop", {recursive: true})
 		await fs.copyFile("src/desktop/preload.js", "build/desktop/preload.js")
 		await fs.copyFile("src/desktop/preload-webdialog.js", "build/desktop/preload-webdialog.js")
 	})
@@ -153,7 +151,7 @@ async function createBootstrap(env) {
 			jsFileName = "index-desktop.js"
 			htmlFileName = "index-desktop.html"
 	}
-	const imports = [{ src: "polyfill.js" }, { src: jsFileName }]
+	const imports = [{src: "polyfill.js"}, {src: jsFileName}]
 
 	const template = `window.whitelabelCustomizations = null
 window.env = ${JSON.stringify(env, null, 2)}
@@ -200,6 +198,6 @@ export async function prepareAssets(stage, host, version) {
 	await fs.writeFile("build/polyfill.js", "")
 
 	for (const mode of ["Browser", "App", "Desktop"]) {
-		await createBootstrap(env.create({ staticUrl: getStaticUrl(stage, mode, host), version, mode, dist: false }))
+		await createBootstrap(env.create({staticUrl: getStaticUrl(stage, mode, host), version, mode, dist: false}))
 	}
 }

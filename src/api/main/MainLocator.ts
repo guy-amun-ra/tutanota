@@ -92,6 +92,8 @@ import { GroupType } from "../common/TutanotaConstants.js"
 import type { ExternalLoginViewModel } from "../../login/ExternalLoginView.js"
 import type { ConversationViewModel } from "../../mail/view/ConversationViewModel.js"
 import { AlarmScheduler } from "../../calendar/date/AlarmScheduler.js"
+import { ImapImporter } from "../worker/imapimport/ImapImporter.js"
+import { ImportImapFacade } from "../worker/facades/lazy/ImportImapFacade.js"
 
 assertMainOrNode()
 
@@ -120,6 +122,7 @@ class MainLocator {
 	mailFacade!: MailFacade
 	shareFacade!: ShareFacade
 	counterFacade!: CounterFacade
+	imapImporterFacade!: ImapImporter
 	indexerFacade!: Indexer
 	searchFacade!: SearchFacade
 	bookingFacade!: BookingFacade
@@ -421,6 +424,7 @@ class MainLocator {
 			mailFacade,
 			shareFacade,
 			counterFacade,
+			imapImporterFacade,
 			indexerFacade,
 			searchFacade,
 			bookingFacade,
@@ -448,6 +452,7 @@ class MainLocator {
 		this.mailFacade = mailFacade
 		this.shareFacade = shareFacade
 		this.counterFacade = counterFacade
+		this.imapImporterFacade = imapImporterFacade
 		this.indexerFacade = indexerFacade
 		this.searchFacade = searchFacade
 		this.bookingFacade = bookingFacade
@@ -485,7 +490,9 @@ class MainLocator {
 			this.nativeInterfaces = createNativeInterfaces(
 				new WebMobileFacade(this.connectivityModel, this.mailModel),
 				new WebDesktopFacade(),
+				imapImporterFacade,
 				new WebInterWindowEventFacade(this.logins, windowFacade),
+				new WebInterWindowEventFacade(logins, windowFacade),
 				new WebCommonNativeFacade(),
 				cryptoFacade,
 				calendarFacade,

@@ -19,6 +19,7 @@ import { RemoteBridge } from "./ipc/RemoteBridge.js"
 import { InterWindowEventFacadeSendDispatcher } from "../native/common/generatedipc/InterWindowEventFacadeSendDispatcher.js"
 import { handleProtocols } from "./net/ProtocolProxy.js"
 import { OfflineDbManager } from "./db/PerWindowSqlCipherFacade.js"
+import { ImapImportFacade } from "../native/common/generatedipc/ImapImportFacade.js"
 import HandlerDetails = Electron.HandlerDetails
 
 const MINIMUM_WINDOW_SIZE: number = 350
@@ -50,6 +51,7 @@ export class ApplicationWindow {
 	private _desktopFacade!: DesktopFacade
 	private _commonNativeFacade!: CommonNativeFacade
 	private _interWindowEventSender!: InterWindowEventFacadeSendDispatcher
+	private _imapImportFacade!: ImapImportFacade
 
 	_browserWindow!: BrowserWindow
 
@@ -120,47 +122,47 @@ export class ApplicationWindow {
 		).concat(
 			isMac
 				? [
-						{
-							key: Keys.F,
-							meta: true,
-							ctrl: true,
-							exec: () => this.toggleFullScreen(),
-							help: "toggleFullScreen_action",
-						},
-				  ]
+					{
+						key: Keys.F,
+						meta: true,
+						ctrl: true,
+						exec: () => this.toggleFullScreen(),
+						help: "toggleFullScreen_action",
+					},
+				]
 				: [
-						{
-							key: Keys.F11,
-							exec: () => this.toggleFullScreen(),
-							help: "toggleFullScreen_action",
+					{
+						key: Keys.F11,
+						exec: () => this.toggleFullScreen(),
+						help: "toggleFullScreen_action",
+					},
+					{
+						key: Keys.RIGHT,
+						alt: true,
+						exec: () => this._browserWindow.webContents.goForward(),
+						help: "pageForward_label",
+					},
+					{
+						key: Keys.LEFT,
+						alt: true,
+						exec: () => this.tryGoBack(),
+						help: "pageBackward_label",
+					},
+					{
+						key: Keys.H,
+						ctrl: true,
+						exec: () => wm.minimize(),
+						help: "hideWindows_action",
+					},
+					{
+						key: Keys.N,
+						ctrl: true,
+						exec: () => {
+							wm.newWindow(true)
 						},
-						{
-							key: Keys.RIGHT,
-							alt: true,
-							exec: () => this._browserWindow.webContents.goForward(),
-							help: "pageForward_label",
-						},
-						{
-							key: Keys.LEFT,
-							alt: true,
-							exec: () => this.tryGoBack(),
-							help: "pageBackward_label",
-						},
-						{
-							key: Keys.H,
-							ctrl: true,
-							exec: () => wm.minimize(),
-							help: "hideWindows_action",
-						},
-						{
-							key: Keys.N,
-							ctrl: true,
-							exec: () => {
-								wm.newWindow(true)
-							},
-							help: "openNewWindow_action",
-						},
-				  ],
+						help: "openNewWindow_action",
+					},
+				],
 		)
 		log.debug(TAG, "webAssetsPath: ", this.absoluteAssetsPath)
 		const preloadPath = path.join(this.electron.app.getAppPath(), "./desktop/preload.js")
@@ -189,11 +191,16 @@ export class ApplicationWindow {
 		return this._interWindowEventSender
 	}
 
+	get imapImportFacade(): ImapImportFacade {
+		return this._imapImportFacade
+	}
+
 	private initFacades() {
 		const sendingFacades = this.remoteBridge.createBridge(this)
 		this._desktopFacade = sendingFacades.desktopFacade
 		this._commonNativeFacade = sendingFacades.commonNativeFacade
 		this._interWindowEventSender = sendingFacades.interWindowEventSender
+		this._imapImportFacade = sendingFacades.imapImportFacade
 	}
 
 	private async loadInitialUrl(noAutoLogin: boolean) {

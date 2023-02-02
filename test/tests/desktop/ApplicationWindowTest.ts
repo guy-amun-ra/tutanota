@@ -24,7 +24,8 @@ o.spec("ApplicationWindow Test", function () {
 		register: function (bw, key, cb) {
 			this.callbacks[key] = cb
 		},
-		unregisterAll: function (key) {},
+		unregisterAll: function (key) {
+		},
 	}
 	const lang = {
 		lang: {
@@ -39,17 +40,23 @@ o.spec("ApplicationWindow Test", function () {
 	}
 	const wm = {
 		ipc: {
-			addWindow: () => {},
-			removeWindow: () => {},
+			addWindow: () => {
+			},
+			removeWindow: () => {
+			},
 			sendRequest: () => Promise.resolve(),
 			initialized: () => Promise.resolve(),
 		},
 		dl: {
-			manageDownloadsForSession: () => {},
+			manageDownloadsForSession: () => {
+			},
 		},
-		newWindow: () => {},
-		hide: () => {},
-		minimize: () => {},
+		newWindow: () => {
+		},
+		hide: () => {
+		},
+		minimize: () => {
+		},
 		getIcon: () => icon,
 	} as const
 	const themeFacadeInstance = new (class implements ThemeFacade {
@@ -57,13 +64,15 @@ o.spec("ApplicationWindow Test", function () {
 			return "light"
 		}
 
-		async setSelectedTheme(themeId: ThemeId) {}
+		async setSelectedTheme(themeId: ThemeId) {
+		}
 
 		async getThemes(): Promise<Array<Theme>> {
 			return []
 		}
 
-		async setThemes(themes: Array<Theme>) {}
+		async setThemes(themes: Array<Theme>) {
+		}
 
 		async getCurrentTheme(): Promise<Theme | null> {
 			return null
@@ -130,7 +139,8 @@ o.spec("ApplicationWindow Test", function () {
 							isDestroyed: () => {
 								return this.webContents.destroyed
 							},
-							send: (msg, val) => {},
+							send: (msg, val) => {
+							},
 							on: (ev: string, cb: () => void) => {
 								this.webContents.callbacks[ev] = cb
 								return this.webContents
@@ -148,8 +158,10 @@ o.spec("ApplicationWindow Test", function () {
 							closeDevTools: function () {
 								this.devToolsOpened = false
 							},
-							goBack: function () {},
-							goForward: function () {},
+							goBack: function () {
+							},
+							goForward: function () {
+							},
 							setZoomFactor: function (n: number) {
 								this.zoomFactor = n
 							},
@@ -161,8 +173,10 @@ o.spec("ApplicationWindow Test", function () {
 							},
 							getTitle: () => "webContents Title",
 							session: {
-								setPermissionRequestHandler: () => {},
-								setSpellCheckerDictionaryDownloadURL: () => {},
+								setPermissionRequestHandler: () => {
+								},
+								setSpellCheckerDictionaryDownloadURL: () => {
+								},
 								protocol: {
 									isProtocolIntercepted() {
 										return false
@@ -187,8 +201,10 @@ o.spec("ApplicationWindow Test", function () {
 									return this
 								},
 							},
-							findInPage: () => {},
-							stopFindInPage: () => {},
+							findInPage: () => {
+							},
+							stopFindInPage: () => {
+							},
 							getURL: () => "file:///path/to/app/desktophtml/meh/more",
 							removeAllListeners: (k) => {
 								this.webContents.callbacks[k] = []
@@ -200,19 +216,27 @@ o.spec("ApplicationWindow Test", function () {
 							},
 						})
 					},
-					removeMenu: function () {},
-					setMenuBarVisibility: function () {},
-					setMinimumSize: function (x: number, y: number) {},
+					removeMenu: function () {
+					},
+					setMenuBarVisibility: function () {
+					},
+					setMinimumSize: function (x: number, y: number) {
+					},
 					loadURL: function (...args) {
 						this.__loadedUrl.resolve(args)
 
 						return Promise.resolve()
 					},
-					close: function () {},
-					show: function () {},
-					hide: function () {},
-					center: function () {},
-					showInactive: function () {},
+					close: function () {
+					},
+					show: function () {
+					},
+					hide: function () {
+					},
+					center: function () {
+					},
+					showInactive: function () {
+					},
 					isFocused: function () {
 						return this.focused
 					},
@@ -225,9 +249,12 @@ o.spec("ApplicationWindow Test", function () {
 					isMinimized: function () {
 						return this.minimized
 					},
-					minimize: function () {},
-					focus: function () {},
-					restore: function () {},
+					minimize: function () {
+					},
+					focus: function () {
+					},
+					restore: function () {
+					},
 					getBounds: function () {
 						return this.bounds
 					},
@@ -238,7 +265,8 @@ o.spec("ApplicationWindow Test", function () {
 						this.bounds.x = x
 						this.bounds.y = y
 					},
-					setBackgroundColor: function () {},
+					setBackgroundColor: function () {
+					},
 				},
 				statics: {
 					lastId: 0,
@@ -248,7 +276,8 @@ o.spec("ApplicationWindow Test", function () {
 				openExternal: () => Promise.resolve(),
 			},
 			Menu: {
-				setApplicationMenu: () => {},
+				setApplicationMenu: () => {
+				},
 			},
 			app: {
 				getAppPath: () => "/path/to/app",
@@ -289,6 +318,7 @@ o.spec("ApplicationWindow Test", function () {
 			interWindowEventSender: object(),
 			desktopFacade: object(),
 			commonNativeFacade: object(),
+			imapImportFacade: object(),
 		}
 		when(remoteBridge.createBridge(anything())).thenReturn(sendingFacades)
 		return {
@@ -685,7 +715,8 @@ o.spec("ApplicationWindow Test", function () {
 		const { electronMock, wmMock, electronLocalshortcutMock, themeFacade, offlineDbFacade, remoteBridge } = standardMocks()
 
 		const w = new ApplicationWindow(wmMock, desktopHtml, icon, electronMock, electronLocalshortcutMock, themeFacade, offlineDbFacade, remoteBridge, dictUrl)
-		const handlerMock = n.spyify(() => {})
+		const handlerMock = n.spyify(() => {
+		})
 		w.setContextMenuHandler(handlerMock)
 		const bwInstance = electronMock.BrowserWindow.mockedInstances[0]
 		const e = {
@@ -902,7 +933,8 @@ o.spec("ApplicationWindow Test", function () {
 		const w = new ApplicationWindow(wmMock, desktopHtml, icon, electronMock, electronLocalshortcutMock, themeFacade, offlineDbFacade, remoteBridge, dictUrl)
 		const bwInstance = electronMock.BrowserWindow.mockedInstances[0]
 
-		let f = () => {}
+		let f = () => {
+		}
 
 		w.on(downcast("one-event"), f)
 		o(bwInstance.on.callCount).equals(4) // initial + now

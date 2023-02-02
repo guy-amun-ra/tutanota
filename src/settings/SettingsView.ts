@@ -64,6 +64,7 @@ import { BaseTopLevelView } from "../gui/BaseTopLevelView.js"
 import { TopLevelAttrs, TopLevelView } from "../TopLevelView.js"
 import { ReferralSettingsViewer } from "./ReferralSettingsViewer.js"
 import { LoginController } from "../api/main/LoginController.js"
+import { ImapImportSettingsViewer } from "./imapimport/ImapImportSettingsViewer.js"
 
 assertMainOrNode()
 
@@ -144,6 +145,15 @@ export class SettingsView extends BaseTopLevelView implements TopLevelView<Setti
 						})
 						return desktopSettingsViewer
 					},
+					undefined,
+				),
+			)
+			this._userFolders.push(
+				new SettingsFolder(
+					"imapImport_label",
+					() => Icons.Import,
+					"imapImport",
+					() => new ImapImportSettingsViewer(),
 					undefined,
 				),
 			)
