@@ -2,7 +2,7 @@ import { deviceConfig } from "../misc/DeviceConfig"
 import { assertMainOrNodeBoot, isApp, isDesktop, isTest } from "../api/common/Env"
 import { downcast } from "@tutao/tutanota-utils"
 import type { HtmlSanitizer } from "../misc/HtmlSanitizer"
-import { NativeThemeFacade, ThemeController, WebThemeFacade } from "./ThemeController"
+import { DarkPreferenceTracker, NativeThemeFacade, ThemeController, WebThemeFacade } from "./ThemeController"
 import { isColorLight } from "./base/Color"
 import { logo_text_bright_grey, logo_text_dark_grey } from "./builtinThemes"
 import { getLogoSvg } from "./base/Logo"
@@ -14,7 +14,7 @@ assertMainOrNodeBoot()
  * There are few built-in ones and there are whitelabel ones.
  * Whitelabel themes use domain name as an ID.
  */
-export type ThemeId = "light" | "dark" | "blue" | string
+export type ThemeId = "light" | "dark" | "blue" | "automatic" | string
 export type BaseThemeId = "light" | "dark"
 export type Theme = {
 	themeId: ThemeId
@@ -73,6 +73,7 @@ const sanitizerStub: Partial<HtmlSanitizer> = {
 export const themeController: ThemeController = new ThemeController(
 	selectedThemeFacade,
 	isTest() ? () => Promise.resolve(downcast<HtmlSanitizer>(sanitizerStub)) : () => import("../misc/HtmlSanitizer").then(({ htmlSanitizer }) => htmlSanitizer),
+	new DarkPreferenceTracker(),
 )
 // ThemeManager.updateTheme updates the object in place, so this will always be current
 // We keep this singleton available because it is convenient to refer to, and already everywhere in the code before the addition of ThemeManager

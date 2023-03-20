@@ -142,6 +142,11 @@ export class AppearanceSettingsViewer implements UpdatableSettingsViewer {
 			label: "switchColorTheme_action",
 			items: [
 				{
+					// fixme translate
+					name: "Automatic",
+					value: "automatic",
+				},
+				{
 					name: lang.get("light_label"),
 					value: "light",
 				},

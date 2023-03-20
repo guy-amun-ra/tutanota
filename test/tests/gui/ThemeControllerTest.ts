@@ -1,5 +1,5 @@
 import o from "ospec"
-import { ThemeController } from "../../../src/gui/ThemeController.js"
+import { DarkPreferenceTracker, ThemeController } from "../../../src/gui/ThemeController.js"
 import type { ThemeCustomizations } from "../../../src/misc/WhitelabelCustomizations.js"
 import { downcast } from "@tutao/tutanota-utils"
 import { ThemeFacade } from "../../../src/native/common/generatedipc/ThemeFacade"
@@ -11,6 +11,7 @@ o.spec("Theme Controller", function () {
 	let themeManager: ThemeController
 	let themeFacadeMock: ThemeFacade
 	let htmlSanitizerMock: HtmlSanitizer
+	let darkPrefMock: DarkPreferenceTracker
 
 	o.beforeEach(async function () {
 		themeFacadeMock = object()
@@ -24,7 +25,8 @@ o.spec("Theme Controller", function () {
 			inlineImageCids: [],
 			links: [],
 		})
-		themeManager = new ThemeController(themeFacadeMock, () => Promise.resolve(htmlSanitizerMock))
+		darkPrefMock = object()
+		themeManager = new ThemeController(themeFacadeMock, () => Promise.resolve(htmlSanitizerMock), darkPrefMock)
 		await themeManager.initialized
 	})
 
@@ -46,5 +48,36 @@ o.spec("Theme Controller", function () {
 		o(savedTheme.logo).equals("sanitized")
 		o(savedTheme.content_fg).equals(themeManager.getDefaultTheme().content_fg)
 		o(themeManager._theme.logo).equals("sanitized")
+	})
+
+	o("when using automatic theme and preferring dark, dark theme is applied, and themeId is automatic", async function () {
+		when(themeFacadeMock.getSelectedTheme()).thenResolve("automatic")
+		when(darkPrefMock.prefersDarkColorScheme()).thenReturn(true)
+
+		await themeManager.reloadTheme()
+
+		o(themeManager.getCurrentTheme().themeId).equals("dark")
+		o(themeManager.themeId).equals("automatic")
+	})
+
+	o("when using automatic theme and preferring light, light theme is applied, and themeId is automatic", async function () {
+		when(themeFacadeMock.getSelectedTheme()).thenResolve("automatic")
+		when(darkPrefMock.prefersDarkColorScheme()).thenReturn(false)
+
+		await themeManager.reloadTheme()
+
+		o(themeManager.getCurrentTheme().themeId).equals("light")
+		o(themeManager.themeId).equals("automatic")
+	})
+
+	o("when switching to automatic and preferring the light theme, light theme is applied, and themeId is automatic", async function () {
+		when(themeFacadeMock.getSelectedTheme()).thenResolve("dark")
+		await themeManager._initializeTheme()
+
+		when(darkPrefMock.prefersDarkColorScheme()).thenReturn(false)
+		await themeManager.setThemeId("automatic")
+
+		o(themeManager.getCurrentTheme().themeId).equals("light")
+		o(themeManager.themeId).equals("automatic")
 	})
 })

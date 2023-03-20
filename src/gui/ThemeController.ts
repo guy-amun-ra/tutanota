@@ -14,6 +14,18 @@ import { ThemeFacade } from "../native/common/generatedipc/ThemeFacade"
 
 assertMainOrNodeBoot()
 
+export class DarkPreferenceTracker {
+	private readonly mediaQuery = window.matchMedia?.("(prefers-color-scheme: dark)")
+
+	prefersDarkColorScheme(): boolean {
+		return this.mediaQuery?.matches ?? false
+	}
+
+	addPrefersDarkListener(listener: () => unknown): void {
+		this.mediaQuery?.addEventListener("change", listener)
+	}
+}
+
 export class ThemeController {
 	_theme: Theme
 	_themeId: ThemeId
@@ -21,7 +33,11 @@ export class ThemeController {
 	themeIdChangedStream: Stream<ThemeId>
 	initialized: Promise<any>
 
-	constructor(private readonly themeFacade: ThemeFacade, private readonly htmlSanitizer: () => Promise<HtmlSanitizer>) {
+	constructor(
+		private readonly themeFacade: ThemeFacade,
+		private readonly htmlSanitizer: () => Promise<HtmlSanitizer>,
+		private readonly darkPrefTracker: DarkPreferenceTracker,
+	) {
 		// this will change soon
 		this._themeId = defaultThemeId
 		this._theme = this.getDefaultTheme()
@@ -31,6 +47,8 @@ export class ThemeController {
 	}
 
 	async _initializeTheme() {
+		this.darkPrefTracker.addPrefersDarkListener(() => this.reloadTheme())
+
 		// If being accessed from a custom domain, the definition of whitelabelCustomizations is added to index.js serverside upon request
 		// see RootHandler::applyWhitelabelFileModifications.
 		const whitelabelCustomizations = getWhitelabelCustomizations(window)
@@ -79,6 +97,9 @@ export class ThemeController {
 	}
 
 	async _getTheme(themeId: ThemeId): Promise<Theme> {
+		if (themeId === "automatic") {
+			themeId = (await this.darkPrefTracker.prefersDarkColorScheme()) ? "dark" : "light"
+		}
 		if (themes[themeId]) {
 			// Make a defensive copy so that original theme definition is not modified.
 			return Object.assign({}, themes[themeId])
