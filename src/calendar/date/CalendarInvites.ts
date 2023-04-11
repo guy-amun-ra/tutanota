@@ -3,7 +3,7 @@ import type { CalendarEvent, CalendarEventAttendee, File as TutanotaFile, Mail }
 import { locator } from "../../api/main/MainLocator"
 import { CalendarAttendeeStatus, CalendarMethod, getAsEnumValue } from "../../api/common/TutanotaConstants"
 import { assertNotNull, clone, filterInt, noOp, ofClass, Thunk } from "@tutao/tutanota-utils"
-import { findPrivateCalendar, getEventStart, getTimeZone } from "./CalendarUtils"
+import { findPrivateCalendar, getTimeZone } from "./CalendarUtils"
 import { calendarUpdateDistributor } from "./CalendarUpdateDistributor"
 import { Dialog } from "../../gui/base/Dialog"
 import { UserError } from "../../api/main/UserError"
@@ -55,18 +55,17 @@ export async function showEventDetails(event: CalendarEvent, eventBubbleRect: Cl
 		const mailboxDetails = await locator.mailModel.getUserMailboxDetails()
 		const mailboxProerties = await locator.mailModel.getMailboxProperties(mailboxDetails.mailboxGroupRoot)
 		viewModel = await locator.calenderEventViewModel(
-			getEventStart(latestEvent, getTimeZone()),
+			{type: "edit", originalEvent: latestEvent, occurrenceEvent: latestEvent},
 			calendarInfos,
 			mailboxDetails,
 			mailboxProerties,
-			latestEvent,
 			mail,
 			true,
 		)
 
 		onEditEvent = async () => {
 			const { showCalendarEventDialog } = await import("../view/CalendarEventEditDialog")
-			showCalendarEventDialog(latestEvent.startTime, calendarInfos, mailboxDetails, latestEvent, mail ?? undefined)
+			showCalendarEventDialog(calendarInfos, mailboxDetails, {type: "edit", originalEvent: latestEvent, occurrenceEvent: latestEvent}, mail ?? undefined)
 		}
 	}
 

@@ -106,6 +106,8 @@ type InitEventTypeReturn = {
 	possibleOrganizers: Array<EncryptedMailAddress>
 }
 
+export type CalendarEventCreateData = { type: "new"; date: Date } | { type: "edit"; originalEvent: CalendarEvent; occurrenceEvent: CalendarEvent }
+
 /**
  * ViewModel for viewing/editing the event. Takes care of sending out updates.
  */
@@ -168,10 +170,9 @@ export class CalendarEventViewModel {
 		mailboxDetail: MailboxDetail,
 		mailboxProperties: MailboxProperties,
 		sendMailModelFactory: SendMailModelFactory,
-		date: Date,
+		createData: CalendarEventCreateData,
 		zone: string,
 		calendars: ReadonlyMap<Id, CalendarInfo>,
-		existingEvent: CalendarEvent | null,
 		responseTo: Mail | null,
 		resolveRecipientsLazily: boolean,
 	) {
@@ -197,6 +198,7 @@ export class CalendarEventViewModel {
 		this.location = stream("")
 		this.note = ""
 		this.amPmFormat = userController.userSettingsGroupRoot.timeFormat === TimeFormat.TWELVE_HOURS
+		const existingEvent = createData.type === "edit" ? createData.occurrenceEvent : null
 		this.existingEvent = existingEvent ?? null
 		this._zone = zone
 		this._guestStatuses = this._initGuestStatus(existingEvent, resolveRecipientsLazily)
@@ -215,9 +217,10 @@ export class CalendarEventViewModel {
 				}
 			}
 
-			if (existingEvent) {
-				await this._applyValuesFromExistingEvent(existingEvent, calendars)
+			if (createData.type === "edit") {
+				await this._applyValuesFromExistingEvent(createData.occurrenceEvent, calendars)
 			} else {
+				const { date } = createData
 				// We care about passed time here, use it for default time values.
 				this._setDefaultTimes(date)
 

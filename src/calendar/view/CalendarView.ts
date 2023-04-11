@@ -6,7 +6,7 @@ import { ViewSlider } from "../../gui/nav/ViewSlider.js"
 import type { Shortcut } from "../../misc/KeyManager"
 import { keyManager } from "../../misc/KeyManager"
 import { Icons } from "../../gui/base/icons/Icons"
-import { downcast, first, getStartOfDay, incrementDate, LazyLoaded, memoized, ofClass } from "@tutao/tutanota-utils"
+import { downcast, getStartOfDay, incrementDate, LazyLoaded, memoized, ofClass } from "@tutao/tutanota-utils"
 import type { CalendarEvent, GroupSettings, UserSettingsGroupRoot } from "../../api/entities/tutanota/TypeRefs.js"
 import { CalendarEventTypeRef, createGroupSettings } from "../../api/entities/tutanota/TypeRefs.js"
 import { defaultCalendarColor, GroupType, Keys, ShareCapability, TimeFormat } from "../../api/common/TutanotaConstants"
@@ -362,7 +362,7 @@ export class CalendarView extends BaseTopLevelView implements TopLevelView<Calen
 		]
 	}
 
-	_createNewEventDialog(date: Date | null = null) {
+	async _createNewEventDialog(date: Date | null = null) {
 		let dateToUse: Date
 		if (date != null) {
 			dateToUse = date
@@ -375,29 +375,31 @@ export class CalendarView extends BaseTopLevelView implements TopLevelView<Calen
 		let calendarInfos = this.viewModel.getCalendarInfosCreateIfNeeded()
 
 		if (calendarInfos instanceof Promise) {
-			calendarInfos = showProgressDialog("pleaseWait_msg", calendarInfos)
+			calendarInfos = await showProgressDialog("pleaseWait_msg", calendarInfos)
 		}
 
-		Promise.all([calendarInfos, locator.mailModel.getUserMailboxDetails()]).then(([calendars, mailboxDetails]) =>
-			showCalendarEventDialog(dateToUse, calendars, mailboxDetails),
-		)
+		const mailboxDetails = await locator.mailModel.getUserMailboxDetails()
+		showCalendarEventDialog(calendarInfos, mailboxDetails, { type: "new", date: dateToUse })
 	}
 
-	_editEventDialog(event: CalendarEvent) {
-		Promise.all([this.viewModel.calendarInfos.getAsync(), locator.mailModel.getUserMailboxDetails()]).then(([calendarInfos, mailboxDetails]) => {
-			let p = Promise.resolve(event)
+	async _editEventDialog(eventOccurrence: CalendarEvent) {
+		const calendarInfos = await this.viewModel.calendarInfos.getAsync()
+		const mailboxDetails = await locator.mailModel.getUserMailboxDetails()
 
-			if (event.repeatRule) {
-				// in case of a repeat rule we want to show the start event for now to indicate that we edit all events.
-				p = locator.entityClient.load(CalendarEventTypeRef, event._id)
+		// in case of a repeat rule we want to show the start event for now to indicate that we edit all events.
+		let originalEvent
+		try {
+			originalEvent = eventOccurrence.repeatRule ? await locator.entityClient.load(CalendarEventTypeRef, eventOccurrence._id) : eventOccurrence
+		} catch (e) {
+			if (e instanceof NotFoundError) {
+				console.log("calendar event not found when clicking on the event")
+				return
+			} else {
+				throw e
 			}
+		}
 
-			p.then((e) => showCalendarEventDialog(getEventStart(e, getTimeZone()), calendarInfos, mailboxDetails, e)).catch(
-				ofClass(NotFoundError, () => {
-					console.log("calendar event not found when clicking on the event")
-				}),
-			)
-		})
+		showCalendarEventDialog(calendarInfos, mailboxDetails, { type: "edit", originalEvent: originalEvent, occurrenceEvent: eventOccurrence })
 	}
 
 	_viewPeriod(next: boolean, viewType: CalendarViewType) {
@@ -793,10 +795,25 @@ export class CalendarView extends BaseTopLevelView implements TopLevelView<Calen
 		)
 	}
 
-	async _createCalendarEventViewModel(event: CalendarEvent, calendarInfo: LazyLoaded<Map<Id, CalendarInfo>>): Promise<CalendarEventViewModel> {
+	async _createCalendarEventViewModel(
+		event: CalendarEvent,
+		originalOccurrence: CalendarEvent,
+		calendarInfo: LazyLoaded<Map<Id, CalendarInfo>>,
+	): Promise<CalendarEventViewModel> {
 		const [mailboxDetails, calendarInfos] = await Promise.all([locator.mailModel.getUserMailboxDetails(), calendarInfo.getAsync()])
 		const mailboxProperties = await locator.mailModel.getMailboxProperties(mailboxDetails.mailboxGroupRoot)
-		return locator.calenderEventViewModel(getEventStart(event, getTimeZone()), calendarInfos, mailboxDetails, mailboxProperties, event, null, false)
+		return locator.calenderEventViewModel(
+			{
+				type: "edit",
+				originalEvent: originalOccurrence,
+				occurrenceEvent: event,
+			},
+			calendarInfos,
+			mailboxDetails,
+			mailboxProperties,
+			null,
+			false,
+		)
 	}
 
 	async _onEventSelected(calendarEvent: CalendarEvent, domEvent: MouseOrPointerEvent, htmlSanitizerPromise: Promise<HtmlSanitizer>) {
@@ -808,10 +825,11 @@ export class CalendarView extends BaseTopLevelView implements TopLevelView<Calen
 
 		const x = domEvent.clientX
 		const y = domEvent.clientY
+		const originalOccurrence = (await calendarEvent.repeatRule) ? await locator.entityClient.load(CalendarEventTypeRef, calendarEvent._id) : calendarEvent
 		const [viewModel, htmlSanitizer, firstOccurrence] = await Promise.all([
-			this._createCalendarEventViewModel(calendarEvent, this.viewModel.calendarInfos),
+			this._createCalendarEventViewModel(calendarEvent, originalOccurrence, this.viewModel.calendarInfos),
 			htmlSanitizerPromise,
-			calendarEvent.repeatRule ? await locator.entityClient.load(CalendarEventTypeRef, calendarEvent._id) : calendarEvent,
+			originalOccurrence,
 		])
 		// We want the popup to show at the users mouse
 		const rect = {

@@ -92,6 +92,7 @@ import { GroupType } from "../common/TutanotaConstants.js"
 import type { ExternalLoginViewModel } from "../../login/ExternalLoginView.js"
 import type { ConversationViewModel } from "../../mail/view/ConversationViewModel.js"
 import { AlarmScheduler } from "../../calendar/date/AlarmScheduler.js"
+import { CalendarEventCreateData } from "../../calendar/date/CalendarEventViewModel.js"
 
 assertMainOrNode()
 
@@ -190,7 +191,8 @@ class MainLocator {
 				const mailboxDetail = await this.mailModel.getUserMailboxDetails()
 				const mailboxProperties = await this.mailModel.getMailboxProperties(mailboxDetail.mailboxGroupRoot)
 				const calendars = await calendarInfo.getAsync()
-				return this.calenderEventViewModel(getEventStart(event, getTimeZone()), calendars, mailboxDetail, mailboxProperties, event, null, false)
+				// FIXME is this original event or occurrencethat we get here?
+				return this.calenderEventViewModel({type: "edit", originalEvent: event, occurrenceEvent: event}, calendars, mailboxDetail, mailboxProperties, null, false)
 			},
 			this.calendarModel,
 			this.entityClient,
@@ -222,11 +224,10 @@ class MainLocator {
 	}
 
 	async calenderEventViewModel(
-		date: Date,
+		createData: CalendarEventCreateData,
 		calendars: ReadonlyMap<Id, CalendarInfo>,
 		mailboxDetail: MailboxDetail,
 		mailboxProperties: MailboxProperties,
-		existingEvent: CalendarEvent | null,
 		previousMail: Mail | null,
 		resolveRecipientsLazily: boolean,
 	): Promise<CalendarEventViewModel> {
@@ -243,10 +244,9 @@ class MainLocator {
 			mailboxDetail,
 			mailboxProperties,
 			sendMailModelFactory,
-			date,
+			createData,
 			getTimeZone(),
 			calendars,
-			existingEvent,
 			previousMail,
 			resolveRecipientsLazily,
 		)

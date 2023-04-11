@@ -17,7 +17,7 @@ import { BootIcons } from "../../gui/base/icons/BootIcons"
 import { Checkbox } from "../../gui/base/Checkbox.js"
 import { ExpanderButton, ExpanderPanel } from "../../gui/base/Expander"
 import { client } from "../../misc/ClientDetector"
-import type { Guest } from "../date/CalendarEventViewModel"
+import type { CalendarEventCreateData, Guest } from "../date/CalendarEventViewModel"
 import { CalendarEventViewModel } from "../date/CalendarEventViewModel"
 import { UserError } from "../../api/main/UserError"
 import { theme } from "../../gui/theme"
@@ -92,10 +92,9 @@ const alarmIntervalItems = [
 ]
 
 export async function showCalendarEventDialog(
-	date: Date,
 	calendars: ReadonlyMap<Id, CalendarInfo>,
 	mailboxDetail: MailboxDetail,
-	existingEvent?: CalendarEvent,
+	createData: CalendarEventCreateData,
 	responseMail?: Mail,
 ) {
 	const { HtmlEditor } = await import("../../gui/editor/HtmlEditor")
@@ -103,11 +102,10 @@ export async function showCalendarEventDialog(
 	const mailboxProperties = await locator.mailModel.getMailboxProperties(mailboxDetail.mailboxGroupRoot)
 
 	const viewModel = await locator.calenderEventViewModel(
-		date,
+		createData,
 		calendars,
 		mailboxDetail,
 		mailboxProperties,
-		existingEvent ?? null,
 		responseMail ?? null,
 		false,
 	)
