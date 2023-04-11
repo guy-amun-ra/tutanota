@@ -125,6 +125,21 @@
 					"info": "AddAssociation CalendarRepeatRule/excludedDates/AGGREGATION/1319."
 				}
 			]
+		},
+		{
+			"version": 62,
+			"changes": [
+				{
+					"name": "AddValue",
+					"sourceType": "CalendarEvent",
+					"info": "AddValue CalendarEvent/recurrenceId/1320."
+				},
+				{
+					"name": "AddAssociation",
+					"sourceType": "CalendarEventUidIndex",
+					"info": "AddAssociation CalendarEventUidIndex/rescheduledOccurrences/LIST_ELEMENT_ASSOCIATION/1321."
+				}
+			]
 		}
 	]
 }

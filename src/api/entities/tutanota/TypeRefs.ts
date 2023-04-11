@@ -81,6 +81,7 @@ export type CalendarEvent = {
 	hashedUid: null | Uint8Array;
 	invitedConfidentially: null | boolean;
 	location: string;
+	recurrenceId: null | Date;
 	sequence: NumberString;
 	startTime: Date;
 	summary: string;
@@ -133,6 +134,7 @@ export type CalendarEventUidIndex = {
 	_permissions: Id;
 
 	calendarEvent: IdTuple;
+	rescheduledOccurrences: IdTuple[];
 }
 export const CalendarEventUpdateTypeRef: TypeRef<CalendarEventUpdate> = new TypeRef("tutanota", "CalendarEventUpdate")
 
