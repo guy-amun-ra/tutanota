@@ -218,10 +218,9 @@ o.spec("CalendarEventViewModel", function () {
 			mailboxDetail,
 			mailboxProperties,
 			sendFactory,
-			now,
+			existingEvent ? { type: "edit", occurrenceEvent: existingEvent, originalEvent: existingEvent } : { type: "new", date: now },
 			zone,
 			calendars,
-			existingEvent,
 			mail,
 			false,
 		)
@@ -3209,7 +3208,7 @@ o.spec("CalendarEventViewModel", function () {
 			})
 			// @ ts-ignore
 			const mock: EntityRestClientMock = viewModel._entityClient._target as EntityRestClientMock
-			mock.addListInstances(viewModel.existingEvent!)
+			mock.addListInstances(viewModel.seriesEvent!)
 
 			const calendars = new Map()
 			calendars.set("ownerGroup", {
@@ -3246,7 +3245,7 @@ o.spec("CalendarEventViewModel", function () {
 			})
 			// @ ts-ignore
 			const mock: EntityRestClientMock = viewModel._entityClient._target as EntityRestClientMock
-			mock.addListInstances(viewModel.existingEvent!)
+			mock.addListInstances(viewModel.seriesEvent!)
 
 			const calendars = new Map()
 			calendars.set("ownerGroup", {
@@ -3265,6 +3264,8 @@ o.spec("CalendarEventViewModel", function () {
 			])
 		})
 	})
+
+	// FIXME add tests for editing occurrence and shiftingg the time
 })
 
 o.spec("areExcludedDatesEqual", function () {
