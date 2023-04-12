@@ -132,8 +132,7 @@ export class CalendarEventViewModel {
 	readonly location: Stream<string>
 	note: string
 	readonly amPmFormat: boolean
-	readonly seriesEvent: CalendarEvent | null
-	private occurrenceEvent: CalendarEvent | null
+	private readonly editingData: {seriesEvent: CalendarEvent; occurrenceEvent: CalendarEvent } | null
 	private _oldStartTime: Time | null = null
 	readonly _zone: string
 	// We keep alarms read-only so that view can diff just array and not all elements
@@ -199,13 +198,11 @@ export class CalendarEventViewModel {
 		this.location = stream("")
 		this.note = ""
 		this.amPmFormat = userController.userSettingsGroupRoot.timeFormat === TimeFormat.TWELVE_HOURS
-		const existingEvent = createData.type === "edit" ? createData.originalEvent : null
-		this.seriesEvent = existingEvent ?? null
-		this.occurrenceEvent = createData.type === "edit" ? createData.occurrenceEvent : null
+		this.editingData = createData.type === "edit" ? {seriesEvent: createData.originalEvent, occurrenceEvent: createData.occurrenceEvent} : null
 		this._zone = zone
-		this._guestStatuses = this._initGuestStatus(existingEvent, resolveRecipientsLazily)
+		this._guestStatuses = this._initGuestStatus(this.editingData?.seriesEvent ?? null, resolveRecipientsLazily)
 		this.attendees = this._initAttendees()
-		const { eventType, organizer, possibleOrganizers } = this.initEventTypeAndOrganizers(existingEvent, calendars, mailboxProperties, userController)
+		const { eventType, organizer, possibleOrganizers } = this.initEventTypeAndOrganizers(this.editingData?.seriesEvent ?? null, calendars, mailboxProperties, userController)
 		this._eventType = eventType
 		this.organizer = organizer
 		this.possibleOrganizers = possibleOrganizers
@@ -213,11 +210,9 @@ export class CalendarEventViewModel {
 		this.calendars = calendars
 		this.selectedCalendar = stream<CalendarInfo | null>(this.getAvailableCalendars()[0] ?? null)
 		this.initialized = Promise.resolve().then(async () => {
-			if (existingEvent) {
-				if (existingEvent.invitedConfidentially != null) {
-					this.setConfidential(existingEvent.invitedConfidentially)
+				if (this.editingData?.seriesEvent?.invitedConfidentially != null) {
+					this.setConfidential(this.editingData.seriesEvent.invitedConfidentially)
 				}
-			}
 
 			if (createData.type === "edit") {
 				await this._applyValuesFromExistingEvent(createData.occurrenceEvent, createData.originalEvent, calendars)
@@ -759,7 +754,7 @@ export class CalendarEventViewModel {
 	}
 
 	removeAttendee(guest: Guest) {
-		const existingRecipient = this.seriesEvent && findAttendeeInAddresses(this.seriesEvent.attendees, [guest.address.address])
+		const existingRecipient = this.editingData && findAttendeeInAddresses(this.editingData.seriesEvent.attendees, [guest.address.address])
 
 		for (const model of [this._inviteModel, this._updateModel, this._cancelModel]) {
 			const recipientInfo = findRecipientWithAddress(model.bccRecipients(), guest.address.address)
@@ -793,9 +788,9 @@ export class CalendarEventViewModel {
 
 	private hasGuests() {
 		return (
-			this.seriesEvent &&
-			this.seriesEvent.attendees.length > 0 &&
-			!(this.seriesEvent.attendees.length === 1 && findAttendeeInAddresses([this.seriesEvent.attendees[0]], this._ownMailAddresses) != null)
+			this.editingData?.seriesEvent &&
+			this.editingData.seriesEvent.attendees.length > 0 &&
+			!(this.editingData.seriesEvent.attendees.length === 1 && findAttendeeInAddresses([this.editingData.seriesEvent.attendees[0]], this._ownMailAddresses) != null)
 		)
 	}
 
@@ -813,7 +808,7 @@ export class CalendarEventViewModel {
 	}
 
 	async deleteEvent(): Promise<void> {
-		const event = this.seriesEvent
+		const event = this.editingData?.seriesEvent
 		if (event) {
 			try {
 				// We must always be in attendees so we just check that there's more than one attendee
@@ -837,7 +832,7 @@ export class CalendarEventViewModel {
 	 * the list of exclusions is maintained sorted from earliest to latest.
 	 */
 	async excludeThisOccurrence(): Promise<void> {
-		const existingEvent = this.seriesEvent
+		const existingEvent = this.editingData?.seriesEvent
 		if (existingEvent == null) return
 		const selectedCalendar = this.selectedCalendar()
 		if (!selectedCalendar) return
@@ -914,7 +909,7 @@ export class CalendarEventViewModel {
 					return this._sendNotificationAndSave(askInsecurePassword, askForUpdates, showProgress, newEvent, newAlarms)
 				} else if (this._eventType === EventType.INVITE) {
 					// We have been invited by another person (internal/ unsecure external)
-					return this._respondToOrganizerAndSave(showProgress, assertNotNull(this.seriesEvent), newEvent, newAlarms)
+					return this._respondToOrganizerAndSave(showProgress, assertNotNull(this.editingData?.seriesEvent), newEvent, newAlarms)
 				} else {
 					// Either this is an event in a shared calendar. We cannot send anything because it's not our event.
 					// Or no changes were made that require sending updates and we just save other changes.
@@ -977,10 +972,10 @@ export class CalendarEventViewModel {
 
 		const groupRoot = assertNotNull(this.selectedCalendar()).groupRoot
 
-		if (this.seriesEvent == null || this.seriesEvent._id == null) {
+		if (this.editingData?.seriesEvent._id == null) {
 			return this._calendarModel.createEvent(newEvent, newAlarms, this._zone, groupRoot)
 		} else {
-			return this._calendarModel.updateEvent(newEvent, newAlarms, this._zone, groupRoot, this.seriesEvent).then(noOp)
+			return this._calendarModel.updateEvent(newEvent, newAlarms, this._zone, groupRoot, this.editingData.seriesEvent).then(noOp)
 		}
 	}
 
@@ -1215,7 +1210,7 @@ export class CalendarEventViewModel {
 		const calendarArray = Array.from(this.calendars.values())
 
 		if (this.isReadOnlyEvent()) {
-			return calendarArray.filter((calendarInfo) => calendarInfo.group._id === assertNotNull(this.seriesEvent)._ownerGroup)
+			return calendarArray.filter((calendarInfo) => calendarInfo.group._id === assertNotNull(this.editingData?.seriesEvent)._ownerGroup)
 		} else if (this.attendees().length || this._eventType === EventType.INVITE) {
 			// We don't allow inviting in a shared calendar. If we have attendees, we cannot select a shared calendar
 			// We also don't allow accepting invites into shared calendars.
@@ -1248,19 +1243,19 @@ export class CalendarEventViewModel {
 		// We have to use existing instance to get all the final fields correctly
 		// Using clone feels hacky but otherwise we need to save all attributes of the existing event somewhere and if dialog is
 		// cancelled we also don't want to modify passed event
-		const newEvent = this.occurrenceEvent ? clone(this.occurrenceEvent) : createCalendarEvent()
+		const newEvent = this.editingData?.occurrenceEvent ? clone(this.editingData.occurrenceEvent) : createCalendarEvent()
 		newEvent.sequence = incrementSequence(newEvent.sequence, this._eventType === EventType.OWN)
 		let startDate = new Date(this.startDate)
 		let endDate = new Date(this.endDate)
 
 		if (this._allDay) {
-			if (this.occurrenceEvent) {
+			if (this.editingData) {
 				const startDiff =
-					getAllDayDateUTCFromZone(startDate, this._zone).getTime() - getAllDayDateUTCFromZone(this.occurrenceEvent.startTime, this._zone).getTime()
-				startDate = new Date(assertNotNull(this.seriesEvent).startTime.getTime() + startDiff)
+					getAllDayDateUTCFromZone(startDate, this._zone).getTime() - getAllDayDateUTCFromZone(this.editingData.occurrenceEvent.startTime, this._zone).getTime()
+				startDate = new Date(this.editingData.seriesEvent.startTime.getTime() + startDiff)
 				const endDiff =
-					getAllDayDateUTCFromZone(endDate, this._zone).getTime() - getAllDayDateUTCFromZone(this.occurrenceEvent.endTime, this._zone).getTime()
-				endDate = new Date(assertNotNull(this.seriesEvent).endTime.getTime() + endDiff)
+					getAllDayDateUTCFromZone(endDate, this._zone).getTime() - getAllDayDateUTCFromZone(this.editingData.occurrenceEvent.endTime, this._zone).getTime()
+				endDate = new Date(this.editingData.seriesEvent.endTime.getTime() + endDiff)
 			} else {
 				startDate = getAllDayDateUTCFromZone(startDate, this._zone)
 				endDate = getAllDayDateUTCFromZone(getStartOfNextDayWithZone(endDate, this._zone), this._zone)
@@ -1291,12 +1286,12 @@ export class CalendarEventViewModel {
 					minute: endTime.minutes,
 				})
 				.toJSDate()
-			if (this.occurrenceEvent) {
-				const startDiff = startDate.getTime() - this.occurrenceEvent.startTime.getTime()
-				startDate = new Date(assertNotNull(this.seriesEvent).startTime.getTime() + startDiff)
+			if (this.editingData) {
+				const startDiff = startDate.getTime() - this.editingData.occurrenceEvent.startTime.getTime()
+				startDate = new Date(this.editingData.seriesEvent.startTime.getTime() + startDiff)
 
-				const endDiff = endDate.getTime() - this.occurrenceEvent.endTime.getTime()
-				endDate = new Date(assertNotNull(this.seriesEvent).endTime.getTime() + endDiff)
+				const endDiff = endDate.getTime() - this.editingData.occurrenceEvent.endTime.getTime()
+				endDate = new Date(this.editingData.seriesEvent.endTime.getTime() + endDiff)
 			}
 		}
 
@@ -1306,8 +1301,7 @@ export class CalendarEventViewModel {
 		newEvent.summary = this.summary()
 		newEvent.location = this.location()
 		newEvent.invitedConfidentially = this.isConfidential()
-		newEvent.uid =
-			this.seriesEvent && this.seriesEvent.uid ? this.seriesEvent.uid : generateUid(assertNotNull(this.selectedCalendar()).group._id, Date.now())
+		newEvent.uid = this.editingData?.seriesEvent?.uid ?? generateUid(assertNotNull(this.selectedCalendar()).group._id, Date.now())
 		const repeat = this.repeat
 
 		if (repeat == null) {
@@ -1343,7 +1337,7 @@ export class CalendarEventViewModel {
 	 * @returns {boolean} true if changes were made to the event to justify sending updates to attendees.
 	 */
 	_hasChanges(newEvent: CalendarEvent): boolean {
-		const existingEvent = this.seriesEvent
+		const existingEvent = this.editingData?.seriesEvent
 		// we do not check for the sequence number (as it should be changed with every update) or the default instace properties such as _id
 		return (
 			!existingEvent ||
