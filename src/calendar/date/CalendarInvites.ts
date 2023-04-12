@@ -55,7 +55,7 @@ export async function showEventDetails(event: CalendarEvent, eventBubbleRect: Cl
 		const mailboxDetails = await locator.mailModel.getUserMailboxDetails()
 		const mailboxProerties = await locator.mailModel.getMailboxProperties(mailboxDetails.mailboxGroupRoot)
 		viewModel = await locator.calenderEventViewModel(
-			{type: "edit", originalEvent: latestEvent, occurrenceEvent: latestEvent},
+			{ type: "edit", originalEvent: latestEvent, occurrenceEvent: latestEvent },
 			calendarInfos,
 			mailboxDetails,
 			mailboxProerties,
@@ -65,7 +65,16 @@ export async function showEventDetails(event: CalendarEvent, eventBubbleRect: Cl
 
 		onEditEvent = async () => {
 			const { showCalendarEventDialog } = await import("../view/CalendarEventEditDialog")
-			showCalendarEventDialog(calendarInfos, mailboxDetails, {type: "edit", originalEvent: latestEvent, occurrenceEvent: latestEvent}, mail ?? undefined)
+			showCalendarEventDialog(
+				calendarInfos,
+				mailboxDetails,
+				{
+					type: "edit",
+					originalEvent: latestEvent,
+					occurrenceEvent: latestEvent,
+				},
+				mail ?? undefined,
+			)
 		}
 	}
 
@@ -86,7 +95,8 @@ export function getLatestEvent(event: CalendarEvent): Promise<CalendarEvent> {
 	const uid = event.uid
 
 	if (uid) {
-		return locator.calendarFacade.getEventByUid(uid).then((existingEvent) => {
+		return locator.calendarFacade.getEventByUid(uid).then((existingEvents) => {
+			const existingEvent = existingEvents[0]
 			if (existingEvent) {
 				// If the file we are opening is newer than the one which we have on the server, update server version.
 				// Should not happen normally but can happen when e.g. reply and update were sent one after another before we accepted

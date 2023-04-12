@@ -71,6 +71,7 @@ import { Recipient, RecipientType } from "../../api/common/recipients/Recipient"
 import { ResolveMode } from "../../api/main/RecipientsModel.js"
 import { TIMESTAMP_ZERO_YEAR } from "@tutao/tutanota-utils/dist/DateUtils"
 import { getSenderName } from "../../misc/MailboxPropertiesUtils.js"
+import { ProgrammingError } from "../../api/common/error/ProgrammingError.js"
 
 // whether to close dialog
 export type EventCreateResult = boolean
@@ -132,7 +133,7 @@ export class CalendarEventViewModel {
 	readonly location: Stream<string>
 	note: string
 	readonly amPmFormat: boolean
-	private readonly editingData: {seriesEvent: CalendarEvent; occurrenceEvent: CalendarEvent } | null
+	private readonly editingData: { seriesEvent: CalendarEvent; occurrenceEvent: CalendarEvent } | null
 	private _oldStartTime: Time | null = null
 	readonly _zone: string
 	// We keep alarms read-only so that view can diff just array and not all elements
@@ -198,11 +199,16 @@ export class CalendarEventViewModel {
 		this.location = stream("")
 		this.note = ""
 		this.amPmFormat = userController.userSettingsGroupRoot.timeFormat === TimeFormat.TWELVE_HOURS
-		this.editingData = createData.type === "edit" ? {seriesEvent: createData.originalEvent, occurrenceEvent: createData.occurrenceEvent} : null
+		this.editingData = createData.type === "edit" ? { seriesEvent: createData.originalEvent, occurrenceEvent: createData.occurrenceEvent } : null
 		this._zone = zone
 		this._guestStatuses = this._initGuestStatus(this.editingData?.seriesEvent ?? null, resolveRecipientsLazily)
 		this.attendees = this._initAttendees()
-		const { eventType, organizer, possibleOrganizers } = this.initEventTypeAndOrganizers(this.editingData?.seriesEvent ?? null, calendars, mailboxProperties, userController)
+		const { eventType, organizer, possibleOrganizers } = this.initEventTypeAndOrganizers(
+			this.editingData?.seriesEvent ?? null,
+			calendars,
+			mailboxProperties,
+			userController,
+		)
 		this._eventType = eventType
 		this.organizer = organizer
 		this.possibleOrganizers = possibleOrganizers
@@ -210,9 +216,9 @@ export class CalendarEventViewModel {
 		this.calendars = calendars
 		this.selectedCalendar = stream<CalendarInfo | null>(this.getAvailableCalendars()[0] ?? null)
 		this.initialized = Promise.resolve().then(async () => {
-				if (this.editingData?.seriesEvent?.invitedConfidentially != null) {
-					this.setConfidential(this.editingData.seriesEvent.invitedConfidentially)
-				}
+			if (this.editingData?.seriesEvent?.invitedConfidentially != null) {
+				this.setConfidential(this.editingData.seriesEvent.invitedConfidentially)
+			}
 
 			if (createData.type === "edit") {
 				await this._applyValuesFromExistingEvent(createData.occurrenceEvent, createData.originalEvent, calendars)
@@ -230,9 +236,10 @@ export class CalendarEventViewModel {
 		})
 	}
 
-	// reschedule this event by moving the start and end time by delta milliseconds
-	// also moves any exclusions by the same amount
-	rescheduleEvent(delta: number) {
+	/**
+	 * Move this event by changing the start and end time by delta milliseconds
+	 */
+	moveEvent(delta: number) {
 		const oldStartDate = new Date(this.startDate)
 		const startTime = this.startTime
 
@@ -255,7 +262,34 @@ export class CalendarEventViewModel {
 		this.endDate = getStartOfDayWithZone(newEndDate, this._zone)
 		this.startTime = Time.fromDate(newStartDate)
 		this.endTime = Time.fromDate(newEndDate)
+
 		this.deleteExcludedDates()
+	}
+
+	async rescheduleOccurrence(updatedEvent: CalendarEvent) {
+		// TODO move adding to exclusions here
+		if (this.editingData == null) {
+			throw new ProgrammingError("Not an event series")
+		}
+
+		// create event with some of the same data
+		const { occurrenceEvent } = this.editingData
+		const newEvent = createCalendarEvent({
+			startTime: updatedEvent.startTime,
+			endTime: updatedEvent.endTime,
+			uid: occurrenceEvent.uid,
+			hashedUid: occurrenceEvent.hashedUid,
+			// TODO: re-create alarms
+			location: occurrenceEvent.location,
+			repeatRule: null,
+			// TODO: sequence
+			summary: occurrenceEvent.summary,
+			description: occurrenceEvent.description,
+			recurrenceId: occurrenceEvent.startTime,
+		})
+		const groupRoot = assertNotNull(this.selectedCalendar()).groupRoot
+
+		await this._calendarModel.createEvent(newEvent, [], this._zone, groupRoot)
 	}
 
 	async _applyValuesFromExistingEvent(existingEvent: CalendarEvent, eventSeries: CalendarEvent, calendars: ReadonlyMap<Id, CalendarInfo>): Promise<void> {
@@ -790,7 +824,10 @@ export class CalendarEventViewModel {
 		return (
 			this.editingData?.seriesEvent &&
 			this.editingData.seriesEvent.attendees.length > 0 &&
-			!(this.editingData.seriesEvent.attendees.length === 1 && findAttendeeInAddresses([this.editingData.seriesEvent.attendees[0]], this._ownMailAddresses) != null)
+			!(
+				this.editingData.seriesEvent.attendees.length === 1 &&
+				findAttendeeInAddresses([this.editingData.seriesEvent.attendees[0]], this._ownMailAddresses) != null
+			)
 		)
 	}
 
@@ -832,7 +869,7 @@ export class CalendarEventViewModel {
 	 * the list of exclusions is maintained sorted from earliest to latest.
 	 */
 	async excludeThisOccurrence(): Promise<void> {
-		const existingEvent = this.editingData?.seriesEvent
+		const existingEvent = this.editingData?.occurrenceEvent
 		if (existingEvent == null) return
 		const selectedCalendar = this.selectedCalendar()
 		if (!selectedCalendar) return
@@ -1251,10 +1288,12 @@ export class CalendarEventViewModel {
 		if (this._allDay) {
 			if (this.editingData) {
 				const startDiff =
-					getAllDayDateUTCFromZone(startDate, this._zone).getTime() - getAllDayDateUTCFromZone(this.editingData.occurrenceEvent.startTime, this._zone).getTime()
+					getAllDayDateUTCFromZone(startDate, this._zone).getTime() -
+					getAllDayDateUTCFromZone(this.editingData.occurrenceEvent.startTime, this._zone).getTime()
 				startDate = new Date(this.editingData.seriesEvent.startTime.getTime() + startDiff)
 				const endDiff =
-					getAllDayDateUTCFromZone(endDate, this._zone).getTime() - getAllDayDateUTCFromZone(this.editingData.occurrenceEvent.endTime, this._zone).getTime()
+					getAllDayDateUTCFromZone(endDate, this._zone).getTime() -
+					getAllDayDateUTCFromZone(this.editingData.occurrenceEvent.endTime, this._zone).getTime()
 				endDate = new Date(this.editingData.seriesEvent.endTime.getTime() + endDiff)
 			} else {
 				startDate = getAllDayDateUTCFromZone(startDate, this._zone)

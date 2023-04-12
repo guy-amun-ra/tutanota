@@ -1606,3 +1606,6 @@ export type TranslationKeyType =
 	| "you_label"
 	| "emptyString_msg"
 	| "loadAll_action"
+	// FIXME add to phrase
+	| "updateAllEvents_action"
+	| "updateOneEvent_action"

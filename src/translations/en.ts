@@ -1620,6 +1620,9 @@ export default {
 		"yourFolders_action": "YOUR FOLDERS",
 		"yourMessage_label": "Your message",
 		"you_label": "You",
-		"loadAll_action": "Load all"
+		"loadAll_action": "Load all",
+		//FIXME add to phrase
+		"updateAllEvents_action": "Update all events",
+		"updateOneEvent_action": "Update this event only"
 	}
 }

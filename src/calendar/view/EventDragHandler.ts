@@ -2,6 +2,9 @@ import type { CalendarEvent } from "../../api/entities/tutanota/TypeRefs.js"
 import m from "mithril"
 import { getAllDayDateUTC, isAllDayEvent } from "../../api/common/utils/CommonCalendarUtils"
 import { Time } from "../../api/common/utils/Time"
+import { DomRectReadOnlyPolyfilled, Dropdown } from "../../gui/base/Dropdown.js"
+import { defer } from "@tutao/tutanota-utils"
+import { modal } from "../../gui/base/Modal.js"
 
 const DRAG_THRESHOLD = 10
 export type MousePos = {
@@ -16,10 +19,12 @@ type DragData = {
 	keepTime: boolean // Indicates whether the time on the original event should be kept or modified. In case this is set to true the drag operation just shifts event start by whole days.
 }
 
+export type DragResult = { type: "single"; diff: number } | { type: "all"; diff: number } | { type: "none" }
+
 export interface EventDragHandlerCallbacks {
 	readonly onDragStart: (calendarEvent: CalendarEvent, timeToMoveBy: number) => void
 	readonly onDragUpdate: (timeToMoveBy: number) => void
-	readonly onDragEnd: (timeToMoveBy: number) => Promise<void>
+	readonly onDragEnd: (update: DragResult) => Promise<void>
 }
 
 /**
@@ -124,7 +129,7 @@ export class EventDragHandler {
 	 *
 	 * This function will only trigger when prepareDrag has been called
 	 */
-	async endDrag(dateUnderMouse: Date): Promise<void> {
+	async endDrag(dateUnderMouse: Date, event: MouseEvent): Promise<void> {
 		this._draggingArea.classList.remove("cursor-grabbing")
 
 		if (this._isDragging && this._data) {
@@ -134,11 +139,39 @@ export class EventDragHandler {
 			// we want the UI to be able to react to the drop having happened before we get the result
 			this._isDragging = false
 			this._data = null
-			const diffBetweenDates = this.getDayUnderMouseDiff(dragData, adjustedDateUnderMouse)
+			let diffBetweenDates = this.getDayUnderMouseDiff(dragData, adjustedDateUnderMouse)
 
 			// If the date hasn't changed we still have to do the callback so the view model can cancel the drag
 			try {
-				await this._eventDragCallbacks.onDragEnd(diffBetweenDates)
+				let dragResult: DragResult
+				// FIXME don't show dropdown for single event
+				// FIXME is this even a good place for this?
+				if (diffBetweenDates != 0) {
+					const deferred = defer<DragResult>()
+					const dropdown = new Dropdown(
+						() => [
+							{
+								label: "updateOneEvent_action",
+								click: () => deferred.resolve({ type: "single", diff: diffBetweenDates }),
+							},
+							{
+								label: "updateAllEvents_action",
+								click: () => deferred.resolve({ type: "all", diff: diffBetweenDates }),
+							},
+						],
+						300,
+					)
+						.setCloseHandler(() => {
+							deferred.resolve({ type: "none" })
+							dropdown.close()
+						})
+						.setOrigin(new DomRectReadOnlyPolyfilled(event.x, event.y, 0, 0))
+					modal.displayUnique(dropdown, false)
+					dragResult = await deferred.promise
+				} else {
+					dragResult = { type: "none" }
+				}
+				await this._eventDragCallbacks.onDragEnd(dragResult)
 			} finally {
 				this._hasChanged = true
 				m.redraw()

@@ -1,5 +1,5 @@
 import type { DeferredObject } from "@tutao/tutanota-utils"
-import { assertNotNull, clone, defer, downcast, filterInt, getFromMap, LazyLoaded, noOp } from "@tutao/tutanota-utils"
+import { assertNotNull, clone, defer, downcast, filterInt, getFromMap, LazyLoaded, noOp, ofClass } from "@tutao/tutanota-utils"
 import { CalendarMethod, FeatureType, GroupType, OperationType } from "../../api/common/TutanotaConstants"
 import type { EntityUpdateData } from "../../api/main/EventController"
 import { EventController, isUpdateForTypeRef } from "../../api/main/EventController"
@@ -97,6 +97,9 @@ export class CalendarModel {
 			newEvent.startTime.getTime() !== existingEvent.startTime.getTime() ||
 			!repeatRulesEqual(newEvent.repeatRule, existingEvent.repeatRule)
 		) {
+			if (existingEvent.uid) {
+				await this.removeAllRecheduledEvents(existingEvent.uid, groupRoot._id)
+			}
 			// We should reload the instance here because session key and permissions are updated when we recreate event.
 			await this.doCreate(newEvent, zone, groupRoot, newAlarms, existingEvent)
 			return await this.entityClient.load<CalendarEvent>(CalendarEventTypeRef, newEvent._id)
@@ -106,6 +109,15 @@ export class CalendarModel {
 			// version
 			await this.calendarFacade.updateCalendarEvent(newEvent, newAlarms, existingEvent)
 			return newEvent
+		}
+	}
+
+	private async removeAllRecheduledEvents(uid: string, groupId: Id): Promise<void> {
+		const events = await this.getEventsByUid(uid, groupId)
+		for (const event of events) {
+			if (event.recurrenceId) {
+				await this.doDeleteEvent(event).catch(ofClass(NotFoundError, noOp))
+			}
 		}
 	}
 
@@ -209,7 +221,14 @@ export class CalendarModel {
 	}
 
 	async deleteEvent(event: CalendarEvent): Promise<void> {
-		return await this.entityClient.erase(event)
+		if (event.uid && event.recurrenceId == null) {
+			await this.removeAllRecheduledEvents(event.uid, assertNotNull(event._ownerGroup))
+		}
+		return await this.doDeleteEvent(event)
+	}
+
+	private async doDeleteEvent(event: CalendarEvent) {
+		await this.entityClient.erase(event)
 	}
 
 	private async loadAndProcessCalendarUpdates(): Promise<void> {
@@ -282,11 +301,12 @@ export class CalendarModel {
 			return
 		}
 
-		const dbEvent = await this.calendarFacade.getEventByUid(event.uid)
-		if (dbEvent == null) {
+		const eventsForUid = await this.getEventsByUid(event.uid)
+		if (eventsForUid.length === 0) {
 			// event was not found
 			return
 		}
+		const [dbEvent] = eventsForUid
 
 		if (calendarData.method === CalendarMethod.REPLY) {
 			// first check if the sender of the email is in the attendee list
@@ -481,6 +501,10 @@ export class CalendarModel {
 			const alarmScheduler = await this.alarmScheduler()
 			alarmScheduler.cancelAlarm(identifier)
 		}
+	}
+
+	async getEventsByUid(uid: string, groupId: Id | null = null) {
+		return await this.calendarFacade.getEventByUid(uid, groupId)
 	}
 }
 

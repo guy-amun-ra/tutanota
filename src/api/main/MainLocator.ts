@@ -182,17 +182,15 @@ class MainLocator {
 	async calendarViewModel(): Promise<CalendarViewModel> {
 		const { ReceivedGroupInvitationsModel } = await import("../../sharing/model/ReceivedGroupInvitationsModel.js")
 		const { CalendarViewModel } = await import("../../calendar/view/CalendarViewModel.js")
-		const { getEventStart, getTimeZone } = await import("../../calendar/date/CalendarUtils.js")
 		const calendarInvitations = new ReceivedGroupInvitationsModel(GroupType.Calendar, this.eventController, this.entityClient, this.logins)
 		calendarInvitations.init()
 		return new CalendarViewModel(
 			this.logins,
-			async (event, calendarInfo) => {
+			async (eventSeries, eventOccurrence, calendarInfo) => {
 				const mailboxDetail = await this.mailModel.getUserMailboxDetails()
 				const mailboxProperties = await this.mailModel.getMailboxProperties(mailboxDetail.mailboxGroupRoot)
 				const calendars = await calendarInfo.getAsync()
-				// FIXME is this original event or occurrencethat we get here?
-				return this.calenderEventViewModel({type: "edit", originalEvent: event, occurrenceEvent: event}, calendars, mailboxDetail, mailboxProperties, null, false)
+				return this.calenderEventViewModel({type: "edit", originalEvent: eventSeries, occurrenceEvent: eventOccurrence}, calendars, mailboxDetail, mailboxProperties, null, false)
 			},
 			this.calendarModel,
 			this.entityClient,

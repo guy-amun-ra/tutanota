@@ -50,7 +50,7 @@ import { EventController, isUpdateForTypeRef } from "../../api/main/EventControl
 import { EntityClient } from "../../api/common/EntityClient"
 import { ProgressTracker } from "../../api/main/ProgressTracker"
 import { DeviceConfig } from "../../misc/DeviceConfig"
-import type { EventDragHandlerCallbacks } from "./EventDragHandler"
+import type { DragResult, EventDragHandlerCallbacks } from "./EventDragHandler"
 import { locator } from "../../api/main/MainLocator.js"
 
 export type EventsOnDays = {
@@ -80,7 +80,11 @@ export type MouseOrPointerEvent = MouseEvent | PointerEvent
 export type CalendarEventBubbleClickHandler = (arg0: CalendarEvent, arg1: MouseOrPointerEvent) => unknown
 type EventsForDays = Map<number, Array<CalendarEvent>>
 export const LIMIT_PAST_EVENTS_YEARS = 100
-export type CreateCalendarEventViewModelFunction = (event: CalendarEvent, calendarInfos: LazyLoaded<Map<Id, CalendarInfo>>) => Promise<CalendarEventViewModel>
+export type CreateCalendarEventViewModelFunction = (
+	eventSeries: CalendarEvent,
+	eventOccurrence: CalendarEvent,
+	calendarInfos: LazyLoaded<Map<Id, CalendarInfo>>,
+) => Promise<CalendarEventViewModel>
 
 export class CalendarViewModel implements EventDragHandlerCallbacks {
 	// Should not be changed directly but only through the URL
@@ -93,7 +97,6 @@ export class CalendarViewModel implements EventDragHandlerCallbacks {
 
 	_hiddenCalendars: Set<Id>
 	readonly _calendarInvitations: ReceivedGroupInvitationsModel
-	_createCalendarEventViewModelCallback: (event: CalendarEvent, calendarInfos: LazyLoaded<Map<Id, CalendarInfo>>) => Promise<CalendarEventViewModel>
 	readonly _calendarModel: CalendarModel
 	readonly _entityClient: EntityClient
 	// Events that have been dropped but still need to be rendered as temporary while waiting for entity updates.
@@ -105,7 +108,7 @@ export class CalendarViewModel implements EventDragHandlerCallbacks {
 
 	constructor(
 		loginController: LoginController,
-		createCalendarEventViewModelCallback: CreateCalendarEventViewModelFunction,
+		private readonly createCalendarEventViewModelCallback: CreateCalendarEventViewModelFunction,
 		calendarModel: CalendarModel,
 		entityClient: EntityClient,
 		eventController: EventController,
@@ -115,7 +118,6 @@ export class CalendarViewModel implements EventDragHandlerCallbacks {
 	) {
 		this._calendarModel = calendarModel
 		this._entityClient = entityClient
-		this._createCalendarEventViewModelCallback = createCalendarEventViewModelCallback
 		this._transientEvents = []
 
 		const userId = loginController.getUserController().user._id
@@ -205,21 +207,26 @@ export class CalendarViewModel implements EventDragHandlerCallbacks {
 	/**
 	 * This is called when the event is dropped.
 	 */
-	async onDragEnd(timeToMoveBy: number): Promise<void> {
+	async onDragEnd(dragResult: DragResult): Promise<void> {
 		//if the time of the dragged event is the same as of the original we only cancel the drag
-		if (timeToMoveBy !== 0) {
+		if (dragResult.type !== "none" && dragResult.diff !== 0) {
 			if (this._draggedEvent == null) return
 
 			const { originalEvent, eventClone } = this._draggedEvent
 			this._draggedEvent = null
-			updateTemporaryEventWithDiff(eventClone, originalEvent, timeToMoveBy)
+			updateTemporaryEventWithDiff(eventClone, originalEvent, dragResult.diff)
 
 			this._addTransientEvent(eventClone)
 
 			const firstOccurrence = originalEvent.repeatRule ? await this._entityClient.load(CalendarEventTypeRef, originalEvent._id) : originalEvent
 
 			try {
-				const didUpdate = await this._moveEvent(firstOccurrence, timeToMoveBy)
+				let didUpdate
+				if (dragResult.type == "all") {
+					didUpdate = await this.moveEvent(firstOccurrence, dragResult.diff)
+				} else {
+					didUpdate = await this.rescheduleEvent(firstOccurrence, originalEvent, eventClone)
+				}
 
 				if (!didUpdate) {
 					this._removeTransientEvent(eventClone)
@@ -344,9 +351,9 @@ export class CalendarViewModel implements EventDragHandlerCallbacks {
 	 * @param event the actually dragged event (may be a repeated instance)
 	 * @param diff the amount of milliseconds to shift the event by
 	 */
-	async _moveEvent(event: CalendarEvent, diff: number): Promise<EventCreateResult> {
-		const viewModel: CalendarEventViewModel = await this._createCalendarEventViewModelCallback(event, this.calendarInfos)
-		viewModel.rescheduleEvent(diff)
+	private async moveEvent(event: CalendarEvent, diff: number): Promise<EventCreateResult> {
+		const viewModel: CalendarEventViewModel = await this.createCalendarEventViewModelCallback(event, event, this.calendarInfos)
+		viewModel.moveEvent(diff)
 		// Errors are handled in the individual views
 		return viewModel.saveAndSend({
 			askForUpdates: askIfShouldSendCalendarUpdatesToAttendees,
@@ -645,6 +652,13 @@ export class CalendarViewModel implements EventDragHandlerCallbacks {
 	_redraw() {
 		// Need to pass some argument to make it a "set" operation
 		this._redrawStream(undefined)
+	}
+
+	private async rescheduleEvent(firstOccurrence: CalendarEvent, originalEvent: CalendarEvent, eventClone: CalendarEvent): Promise<true> {
+		const viewModel = await this.createCalendarEventViewModelCallback(firstOccurrence, originalEvent, this.calendarInfos)
+		await viewModel.excludeThisOccurrence()
+		await viewModel.rescheduleOccurrence(eventClone)
+		return true
 	}
 }
 

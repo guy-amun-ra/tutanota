@@ -190,13 +190,12 @@ export class CalendarMonthView implements Component<CalendarMonthAttrs>, ClassCo
 					},
 					onmouseup: (mouseEvent: MouseEvent & { redraw?: boolean }) => {
 						mouseEvent.redraw = false
-
-						this._endDrag()
+						this._endDrag(mouseEvent)
 					},
 					onmouseleave: (mouseEvent: MouseEvent & { redraw?: boolean }) => {
 						mouseEvent.redraw = false
 
-						this._endDrag()
+						this._endDrag(mouseEvent)
 					},
 				},
 				weeks.map((week) => {
@@ -212,7 +211,7 @@ export class CalendarMonthView implements Component<CalendarMonthAttrs>, ClassCo
 		])
 	}
 
-	_endDrag() {
+	_endDrag(event: MouseEvent) {
 		const dayUnderMouse = this._dayUnderMouse
 		const originalDate = this._eventDragHandler.originalEvent?.startTime
 
@@ -220,7 +219,7 @@ export class CalendarMonthView implements Component<CalendarMonthAttrs>, ClassCo
 			//make sure the date we move to also gets a time
 			const dateUnderMouse = Time.fromDate(originalDate).toDate(dayUnderMouse)
 
-			this._eventDragHandler.endDrag(dateUnderMouse).catch(ofClass(UserError, showUserError))
+			this._eventDragHandler.endDrag(dateUnderMouse, event).catch(ofClass(UserError, showUserError))
 		}
 	}
 

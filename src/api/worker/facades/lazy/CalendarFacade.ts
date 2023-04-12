@@ -16,10 +16,10 @@ import {
 	UserTypeRef,
 } from "../../../entities/sys/TypeRefs.js"
 import {
-	asyncFindAndMap,
 	downcast,
 	flat,
 	flatMap,
+	getFirstOrThrow,
 	getFromMap,
 	groupBy,
 	groupByAndMapUniquely,
@@ -384,26 +384,43 @@ export class CalendarFacade {
 	 * Queries the event using the uid index. The index is stored per calendar so we have to go through all calendars to find matching event.
 	 * We currently only need this for calendar event updates and for that we don't want to look into shared calendars.
 	 */
-	getEventByUid(uid: string): Promise<CalendarEvent | null> {
+	async getEventByUid(uid: string, groupId: Id | null = null): Promise<CalendarEvent[]> {
 		const calendarMemberships = this.userFacade.getLoggedInUser().memberships.filter((m) => m.groupType === GroupType.Calendar && m.capability == null)
 
-		return asyncFindAndMap(calendarMemberships, (membership) => {
-			return this.entityClient
-				.load(CalendarGroupRootTypeRef, membership.group)
-				.then(
-					(groupRoot) =>
-						groupRoot.index &&
-						this.entityClient.load<CalendarEventUidIndex>(CalendarEventUidIndexTypeRef, [groupRoot.index.list, uint8arrayToCustomId(hashUid(uid))]),
-				)
-				.catch(ofClass(NotFoundError, () => null))
-				.catch(ofClass(NotAuthorizedError, () => null))
-		}).then((indexEntry) => {
-			if (indexEntry) {
-				return this.entityClient.load<CalendarEvent>(CalendarEventTypeRef, indexEntry.calendarEvent).catch(ofClass(NotFoundError, () => null))
-			} else {
-				return null
+		for (const membership of calendarMemberships) {
+			if (groupId != null && groupId != membership.group) {
+				continue
 			}
-		})
+			try {
+				const indexEntry = await this.entityClient
+					.load(CalendarGroupRootTypeRef, membership.group)
+					.then(
+						(groupRoot) =>
+							groupRoot.index &&
+							this.entityClient.load<CalendarEventUidIndex>(CalendarEventUidIndexTypeRef, [
+								groupRoot.index.list,
+								uint8arrayToCustomId(hashUid(uid)),
+							]),
+					)
+				if (!indexEntry) continue
+				const originalEvent = await this.entityClient.load(CalendarEventTypeRef, indexEntry.calendarEvent)
+				const rescheduledOccurrences = indexEntry.rescheduledOccurrences.length
+					? await this.entityClient.loadMultiple(
+							CalendarEventTypeRef,
+							listIdPart(getFirstOrThrow(indexEntry.rescheduledOccurrences)),
+							indexEntry.rescheduledOccurrences.map(elementIdPart),
+					  )
+					: []
+				return [originalEvent, ...rescheduledOccurrences]
+			} catch (e) {
+				if (e instanceof NotFoundError || e instanceof NotAuthorizedError) {
+					continue
+				} else {
+					throw e
+				}
+			}
+		}
+		return []
 	}
 
 	async _saveMultipleAlarms(

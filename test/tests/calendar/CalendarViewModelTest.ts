@@ -204,7 +204,7 @@ o.spec("CalendarViewModel", async function () {
 			//star second drop
 			diff = new Date(2021, 8, 25).getTime() - origStartDate2.getTime()
 			//this will fail
-			viewModel._createCalendarEventViewModelCallback = makeCalendarEventViewModelThatFailsSaving
+			viewModel.createCalendarEventViewModelCallback = makeCalendarEventViewModelThatFailsSaving
 			const endDragPromise2 = viewModel.onDragEnd(diff)
 			// Now we have two transient events
 			o(viewModel._draggedEvent?.originalEvent).equals(undefined)
@@ -226,7 +226,7 @@ o.spec("CalendarViewModel", async function () {
 			//start first drop
 			let diff = new Date(2021, 8, 25).getTime() - origStartDate1.getTime()
 			//this will fail
-			viewModel._createCalendarEventViewModelCallback = makeCalendarEventViewModelThatFailsSaving
+			viewModel.createCalendarEventViewModelCallback = makeCalendarEventViewModelThatFailsSaving
 			const endDragPromise1 = viewModel.onDragEnd(diff)
 			//start second drag
 			simulateDrag(event2, new Date(2021, 8, 24), viewModel)
@@ -238,7 +238,7 @@ o.spec("CalendarViewModel", async function () {
 			//start second drop
 			diff = new Date(2021, 8, 25).getTime() - origStartDate1.getTime()
 			//this will not fail
-			viewModel._createCalendarEventViewModelCallback = makeCalendarEventViewModel
+			viewModel.createCalendarEventViewModelCallback = makeCalendarEventViewModel
 			const endDragPromise2 = viewModel.onDragEnd(diff)
 			// Now we have two temporary events and we are not dragging anymore
 			o(viewModel._draggedEvent?.originalEvent).equals(undefined)

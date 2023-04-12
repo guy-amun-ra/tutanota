@@ -56,7 +56,7 @@ export async function asyncFind<T>(
 export async function asyncFindAndMap<T, R>(
 	array: ReadonlyArray<T>,
 	finder: (item: T, index: number, arrayLength: number) => Promise<R | null>,
-): Promise<R | null | undefined> {
+): Promise<R | null> {
 	for (let i = 0; i < array.length; i++) {
 		const item = array[i]
 		const mapped = await finder(item, i, array.length)
