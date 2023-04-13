@@ -67,7 +67,7 @@ import { BusinessFeatureRequiredError } from "../../api/main/BusinessFeatureRequ
 import { hasCapabilityOnGroup } from "../../sharing/GroupUtils"
 import { Time } from "../../api/common/utils/Time"
 import { hasError } from "../../api/common/utils/ErrorCheckUtils"
-import { Recipient, RecipientType } from "../../api/common/recipients/Recipient"
+import { RecipientType } from "../../api/common/recipients/Recipient"
 import { ResolveMode } from "../../api/main/RecipientsModel.js"
 import { TIMESTAMP_ZERO_YEAR } from "@tutao/tutanota-utils/dist/DateUtils"
 import { getSenderName } from "../../misc/MailboxPropertiesUtils.js"
@@ -943,17 +943,16 @@ export class CalendarEventViewModel {
 				// We want to avoid asking whether to send out updates in case nothing has changed
 				if (this._eventType === EventType.OWN && (this.isForceUpdates() || this._hasChanges(newEvent))) {
 					// It is our own event. We might need to send out invites/cancellations/updates
-					return this._sendNotificationAndSave(askInsecurePassword, askForUpdates, showProgress, newEvent, newAlarms)
+					return this.sendNotificationAndSave(askInsecurePassword, askForUpdates, showProgress, newEvent, newAlarms)
 				} else if (this._eventType === EventType.INVITE) {
 					// We have been invited by another person (internal/ unsecure external)
-					return this._respondToOrganizerAndSave(showProgress, assertNotNull(this.editingData?.seriesEvent), newEvent, newAlarms)
+					return this.respondToOrganizerAndSave(showProgress, assertNotNull(this.editingData?.seriesEvent), newEvent, newAlarms)
 				} else {
 					// Either this is an event in a shared calendar. We cannot send anything because it's not our event.
 					// Or no changes were made that require sending updates and we just save other changes.
-					const p = this._saveEvent(newEvent, newAlarms)
+					await showProgress(this._saveEvent(newEvent, newAlarms))
 
-					showProgress(p)
-					return p.then(() => true)
+					return true
 				}
 			})
 			.catch(
@@ -1020,53 +1019,46 @@ export class CalendarEventViewModel {
 		return this._updateModel.bccRecipients().length > 0
 	}
 
-	_sendNotificationAndSave(
+	private async sendNotificationAndSave(
 		askInsecurePassword: () => Promise<boolean>,
 		askForUpdates: () => Promise<"yes" | "no" | "cancel">,
 		showProgress: ShowProgressCallback,
 		newEvent: CalendarEvent,
 		newAlarms: Array<AlarmInfo>,
 	): Promise<boolean> {
-		// ask for update
-		const askForUpdatesAwait = this._hasUpdatableAttendees()
+		const updateResponse = this._hasUpdatableAttendees()
 			? this.isForceUpdates()
-				? Promise.resolve("yes") // we do not ask again because the user has already indicated that they want to send updates
-				: askForUpdates()
-			: Promise.resolve("no")
+				? "yes" // we do not ask again because the user has already indicated that they want to send updates
+				: await askForUpdates()
+			: "no"
 
 		// no updates possible
 		const passwordCheck = () => (this.hasInsecurePasswords() && this.containsExternalRecipients() ? askInsecurePassword() : Promise.resolve(true))
 
-		return askForUpdatesAwait.then((updateResponse) => {
-			if (updateResponse === "cancel") {
-				return false
-			} else if (
-				this.shouldShowSendInviteNotAvailable() && // we check again to prevent updates after cancelling business or updates for an imported event
-				(updateResponse === "yes" || this._inviteModel.bccRecipients().length || this._cancelModel.bccRecipients().length)
-			) {
-				throw new BusinessFeatureRequiredError("businessFeatureRequiredInvite_msg")
-			}
+		if (updateResponse === "cancel") {
+			return false
+		} else if (
+			this.shouldShowSendInviteNotAvailable() && // we check again to prevent updates after cancelling business or updates for an imported event
+			(updateResponse === "yes" || this._inviteModel.bccRecipients().length || this._cancelModel.bccRecipients().length)
+		) {
+			throw new BusinessFeatureRequiredError("businessFeatureRequiredInvite_msg")
+		}
 
-			// Do check passwords if there are new recipients. We already made decision for those who we invited before
-			return Promise.resolve(this._inviteModel.bccRecipients().length ? passwordCheck() : true).then((passwordCheckPassed) => {
-				if (!passwordCheckPassed) {
-					// User said to not send despite insecure password, stop
-					return false
-				}
+		// Do check passwords if there are new recipients. We already made decision for those who we invited before
+		const passwordCheckPassed = this._inviteModel.bccRecipients().length ? await passwordCheck() : true
+		if (!passwordCheckPassed) {
+			// User said to not send despite insecure password, stop
+			return false
+		}
 
-				// Invites are cancellations are sent out independent of the updates decision
-				const p = this._sendInvite(newEvent)
-					.then(() =>
-						this._cancelModel.bccRecipients().length ? this._distributor.sendCancellation(newEvent, this._cancelModel) : Promise.resolve(),
-					)
-					.then(() => this._saveEvent(newEvent, newAlarms))
-					.then(() => (updateResponse === "yes" ? this._distributor.sendUpdate(newEvent, this._updateModel) : Promise.resolve()))
-					.then(() => true)
+		// Invites are cancellations are sent out independent of the updates decision
+		const p = this._sendInvite(newEvent)
+			.then(() => (this._cancelModel.bccRecipients().length ? this._distributor.sendCancellation(newEvent, this._cancelModel) : Promise.resolve()))
+			.then(() => this._saveEvent(newEvent, newAlarms))
+			.then(() => (updateResponse === "yes" ? this._distributor.sendUpdate(newEvent, this._updateModel) : Promise.resolve()))
 
-				showProgress(p)
-				return p
-			})
-		})
+		await showProgress(p)
+		return true
 	}
 
 	_sendInvite(event: CalendarEvent): Promise<void> {
@@ -1087,7 +1079,7 @@ export class CalendarEventViewModel {
 		}
 	}
 
-	_respondToOrganizerAndSave(
+	private async respondToOrganizerAndSave(
 		showProgress: ShowProgressCallback,
 		existingEvent: CalendarEvent,
 		newEvent: CalendarEvent,
@@ -1115,9 +1107,8 @@ export class CalendarEventViewModel {
 				.then(() => sendResponseModel.dispose())
 		}
 
-		const p = sendPromise.then(() => this._saveEvent(newEvent, newAlarms))
-		showProgress(p)
-		return p.then(() => true)
+		await showProgress(sendPromise.then(() => this._saveEvent(newEvent, newAlarms)))
+		return true
 	}
 
 	selectGoing(going: CalendarAttendeeStatus) {
@@ -1255,10 +1246,6 @@ export class CalendarEventViewModel {
 		} else {
 			return calendarArray.filter((calendarInfo) => hasCapabilityOnGroup(this._userController.user, calendarInfo.group, ShareCapability.Write))
 		}
-	}
-
-	_allRecipients(): Array<Recipient> {
-		return this._inviteModel.allRecipients().concat(this._updateModel.allRecipients()).concat(this._cancelModel.allRecipients())
 	}
 
 	dispose(): void {
