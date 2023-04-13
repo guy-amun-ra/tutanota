@@ -96,7 +96,7 @@ export class CalendarModel {
 		const startTimeHasChanged = newEvent.startTime.getTime() !== existingEvent.startTime.getTime()
 		if (calendarHasChanged || startTimeHasChanged || !repeatRulesEqual(newEvent.repeatRule, existingEvent.repeatRule)) {
 			// FIXME probably also repeat rule but without exclusions??
-			if (existingEvent.uid && (calendarHasChanged || startTimeHasChanged)) {
+			if (existingEvent.uid && newEvent.recurrenceId == null && (calendarHasChanged || startTimeHasChanged)) {
 				await this.removeAllRecheduledEvents(existingEvent.uid, groupRoot._id)
 			}
 			// We should reload the instance here because session key and permissions are updated when we recreate event.

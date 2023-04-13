@@ -147,27 +147,31 @@ export class EventDragHandler {
 				// FIXME don't show dropdown for single event
 				// FIXME is this even a good place for this?
 				if (diffBetweenDates != 0) {
-					const deferred = defer<DragResult>()
-					const dropdown = new Dropdown(
-						() => [
-							{
-								label: "updateOneEvent_action",
-								click: () => deferred.resolve({ type: "single", diff: diffBetweenDates }),
-							},
-							{
-								label: "updateAllEvents_action",
-								click: () => deferred.resolve({ type: "all", diff: diffBetweenDates }),
-							},
-						],
-						300,
-					)
-						.setCloseHandler(() => {
-							deferred.resolve({ type: "none" })
-							dropdown.close()
-						})
-						.setOrigin(new DomRectReadOnlyPolyfilled(event.x, event.y, 0, 0))
-					modal.displayUnique(dropdown, false)
-					dragResult = await deferred.promise
+					if (dragData.originalEvent.repeatRule == null) {
+						dragResult = { type: "all", diff: diffBetweenDates }
+					} else {
+						const deferred = defer<DragResult>()
+						const dropdown = new Dropdown(
+							() => [
+								{
+									label: "updateOneEvent_action",
+									click: () => deferred.resolve({ type: "single", diff: diffBetweenDates }),
+								},
+								{
+									label: "updateAllEvents_action",
+									click: () => deferred.resolve({ type: "all", diff: diffBetweenDates }),
+								},
+							],
+							300,
+						)
+							.setCloseHandler(() => {
+								deferred.resolve({ type: "none" })
+								dropdown.close()
+							})
+							.setOrigin(new DomRectReadOnlyPolyfilled(event.x, event.y, 0, 0))
+						modal.displayUnique(dropdown, false)
+						dragResult = await deferred.promise
+					}
 				} else {
 					dragResult = { type: "none" }
 				}
