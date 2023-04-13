@@ -40,7 +40,7 @@ import {
 	assertNotNull,
 	clone,
 	deleteMapEntry,
-	downcast,
+	downcast, findAndRemove,
 	incrementDate,
 	neverNull,
 	noOp,
@@ -72,6 +72,7 @@ import { ResolveMode } from "../../api/main/RecipientsModel.js"
 import { TIMESTAMP_ZERO_YEAR } from "@tutao/tutanota-utils/dist/DateUtils"
 import { getSenderName } from "../../misc/MailboxPropertiesUtils.js"
 import { ProgrammingError } from "../../api/common/error/ProgrammingError.js"
+import { getElementId } from "../../api/common/utils/EntityUtils.js"
 
 // whether to close dialog
 export type EventCreateResult = boolean
@@ -854,7 +855,8 @@ export class CalendarEventViewModel {
 			try {
 				// We must always be in attendees so we just check that there's more than one attendee
 				if (this._eventType === EventType.OWN && event.attendees.length > 1) {
-					await this.sendCancellation(event)
+					const allEvents = await this._calendarModel.getEventsByUid(assertNotNull(event.uid), event._ownerGroup)
+					await this.sendCancellation(event, allEvents)
 				}
 				return this._calendarModel.deleteEvent(event).catch(ofClass(NotFoundError, noOp))
 			} catch (e) {
@@ -942,17 +944,17 @@ export class CalendarEventViewModel {
 		return Promise.resolve()
 			.then(async () => {
 				await this.waitForResolvedRecipients()
-				let editType: EditSeriesType = "cancel"
-
+				let newlyRescheduledEvent: CalendarEvent | null = null
 				if (this.editingData?.seriesEvent.repeatRule && this.repeat) {
-					editType = await askSingleAllWholeSeries()
+					const editType = await askSingleAllWholeSeries()
 					switch (editType) {
 						case "single":
 							await this.excludeThisOccurrence()
 							const newEvent = this.initializeNewEvent("occurrence")
-							await this.rescheduleOccurrence(newEvent)
-							// FIXME we should do everything else too
-							return true
+							newlyRescheduledEvent = await this.rescheduleOccurrence(newEvent)
+							break
+						// FIXME we should do everything else too
+						// return true
 						case "all":
 							break
 						case "cancel":
@@ -966,8 +968,28 @@ export class CalendarEventViewModel {
 
 				// We want to avoid asking whether to send out updates in case nothing has changed
 				if (this._eventType === EventType.OWN && (this.isForceUpdates() || this._hasChanges(newEvent))) {
+					const allEventsByUid = await this._calendarModel.getEventsByUid(assertNotNull(newEvent.uid), newEvent._ownerGroup)
+					// if the event got changed, we remove old version and put a new one
+					// if it's a new event we just put in the new version
+					if (this.editingData?.seriesEvent) {
+						const oldEventId = getElementId(this.editingData.seriesEvent)
+						findAndRemove(allEventsByUid, event => getElementId(event) === oldEventId)
+					}
+					allEventsByUid.push(newEvent)
+					if (newlyRescheduledEvent && !allEventsByUid.some((e) => getElementId(e) === getElementId(assertNotNull(newlyRescheduledEvent)))) {
+						allEventsByUid.push(newlyRescheduledEvent)
+					}
+
 					// It is our own event. We might need to send out invites/cancellations/updates
-					return this.sendNotificationAndSave(askInsecurePassword, askForUpdates, showProgress, newEvent, newAlarms)
+					return this.sendNotificationAndSave(
+						askInsecurePassword,
+						askForUpdates,
+						showProgress,
+						newEvent,
+						newAlarms,
+						newlyRescheduledEvent,
+						allEventsByUid,
+					)
 				} else if (this._eventType === EventType.INVITE) {
 					// We have been invited by another person (internal/ unsecure external)
 					return this.respondToOrganizerAndSave(showProgress, assertNotNull(this.editingData?.seriesEvent), newEvent, newAlarms)
@@ -989,7 +1011,7 @@ export class CalendarEventViewModel {
 			})
 	}
 
-	private async sendCancellation(event: CalendarEvent): Promise<any> {
+	private async sendCancellation(event: CalendarEvent, allEvents: CalendarEvent[]): Promise<any> {
 		const updatedEvent = clone(event)
 
 		// This is guaranteed to be our own event.
@@ -1014,7 +1036,7 @@ export class CalendarEventViewModel {
 				}
 			}
 			if (this._cancelModel.allRecipients().length) {
-				await this._distributor.sendCancellation(updatedEvent, this._cancelModel)
+				await this._distributor.sendCancellation(updatedEvent, allEvents, this._cancelModel)
 			}
 		} catch (e) {
 			if (e instanceof TooManyRequestsError) {
@@ -1047,8 +1069,10 @@ export class CalendarEventViewModel {
 		askInsecurePassword: () => Promise<boolean>,
 		askForUpdates: () => Promise<"yes" | "no" | "cancel">,
 		showProgress: ShowProgressCallback,
-		newEvent: CalendarEvent,
+		primaryEvent: CalendarEvent,
 		newAlarms: Array<AlarmInfo>,
+		newlyRescheduledEvent: CalendarEvent | null,
+		allRescheduledEvents: CalendarEvent[],
 	): Promise<boolean> {
 		const updateResponse = this._hasUpdatableAttendees()
 			? this.isForceUpdates()
@@ -1076,20 +1100,30 @@ export class CalendarEventViewModel {
 		}
 
 		// Invites are cancellations are sent out independent of the updates decision
-		const p = this._sendInvite(newEvent)
-			.then(() => (this._cancelModel.bccRecipients().length ? this._distributor.sendCancellation(newEvent, this._cancelModel) : Promise.resolve()))
-			.then(() => this._saveEvent(newEvent, newAlarms))
-			.then(() => (updateResponse === "yes" ? this._distributor.sendUpdate(newEvent, this._updateModel) : Promise.resolve()))
+		const p = this._sendInvite(primaryEvent, allRescheduledEvents)
+			.then(() =>
+				this._cancelModel.bccRecipients().length
+					? this._distributor.sendCancellation(primaryEvent, allRescheduledEvents, this._cancelModel)
+					: Promise.resolve(),
+			)
+			.then(() => this._saveEvent(primaryEvent, newAlarms))
+			.then(() => {
+				if (updateResponse === "yes") {
+					return this._distributor.sendUpdate(newlyRescheduledEvent ?? primaryEvent, [primaryEvent, ...allRescheduledEvents], this._updateModel)
+				} else {
+					return Promise.resolve()
+				}
+			})
 
 		await showProgress(p)
 		return true
 	}
 
-	_sendInvite(event: CalendarEvent): Promise<void> {
+	_sendInvite(event: CalendarEvent, allEvents: CalendarEvent[]): Promise<void> {
 		const newAttendees = event.attendees.filter((a) => a.status === CalendarAttendeeStatus.ADDED)
 
 		if (newAttendees.length > 0) {
-			return this._distributor.sendInvite(event, this._inviteModel).then(() => {
+			return this._distributor.sendInvite(event, allEvents, this._inviteModel).then(() => {
 				newAttendees.forEach((a) => {
 					if (a.status === CalendarAttendeeStatus.ADDED) {
 						a.status = CalendarAttendeeStatus.NEEDS_ACTION

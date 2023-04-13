@@ -51,13 +51,16 @@ export function parseCalendarStringData(value: string, zone: string): ParsedCale
 	return parseCalendarEvents(tree, zone)
 }
 
-export function makeInvitationCalendar(versionNumber: string, event: CalendarEvent, method: string, now: Date, zone: string): string {
-	const eventSerialized = serializeEvent(event, [], now, zone)
-	return wrapIntoCalendar(versionNumber, method, eventSerialized)
+export function makeInvitationCalendar(versionNumber: string, events: CalendarEvent[], method: string, now: Date, zone: string): string {
+	const serializedEvents = events
+		.map((event) => serializeEvent(event, [], now, zone))
+		.flat()
+		.concat("\r\n")
+	return wrapIntoCalendar(versionNumber, method, serializedEvents)
 }
 
-export function makeInvitationCalendarFile(event: CalendarEvent, method: CalendarMethod, now: Date, zone: string): DataFile {
-	const stringValue = makeInvitationCalendar(env.versionNumber, event, method, now, zone)
+export function makeInvitationCalendarFile(events: CalendarEvent[], method: CalendarMethod, now: Date, zone: string): DataFile {
+	const stringValue = makeInvitationCalendar(env.versionNumber, events, method, now, zone)
 	const data = stringToUtf8Uint8Array(stringValue)
 	const tmpFile = createFile()
 	const date = new Date()

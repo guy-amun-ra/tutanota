@@ -19,11 +19,11 @@ import { RecipientField } from "../../mail/model/MailUtils"
 import { cleanMailAddress, findAttendeeInAddresses, findRecipientWithAddress } from "../../api/common/utils/CommonCalendarUtils.js"
 
 export interface CalendarUpdateDistributor {
-	sendInvite(existingEvent: CalendarEvent, sendMailModel: SendMailModel): Promise<void>
+	sendInvite(primaryEvent: CalendarEvent, allEvents: CalendarEvent[], sendMailModel: SendMailModel): Promise<void>
 
-	sendUpdate(event: CalendarEvent, sendMailModel: SendMailModel): Promise<void>
+	sendUpdate(updatedEvent: CalendarEvent, allEvents: CalendarEvent[], sendMailModel: SendMailModel): Promise<void>
 
-	sendCancellation(event: CalendarEvent, sendMailModel: SendMailModel): Promise<void>
+	sendCancellation(primaryEvent: CalendarEvent, allEvents: CalendarEvent[], sendMailModel: SendMailModel): Promise<void>
 
 	sendResponse(event: CalendarEvent, sendMailModel: SendMailModel, sendAs: string, responseTo: Mail | null, status: CalendarAttendeeStatus): Promise<void>
 }
@@ -36,47 +36,47 @@ export class CalendarMailDistributor implements CalendarUpdateDistributor {
 		this._countDownLatch = 0
 	}
 
-	sendInvite(event: CalendarEvent, sendMailModel: SendMailModel): Promise<void> {
+	sendInvite(primaryEvent: CalendarEvent, allEvents: CalendarEvent[], sendMailModel: SendMailModel): Promise<void> {
 		const message = lang.get("eventInviteMail_msg", {
-			"{event}": event.summary,
+			"{event}": primaryEvent.summary,
 		})
-		const sender = assertOrganizer(event).address
+		const sender = assertOrganizer(primaryEvent).address
 		return this._sendCalendarFile({
 			sendMailModel,
 			method: MailMethod.ICAL_REQUEST,
 			subject: message,
-			body: makeInviteEmailBody(sender, event, message),
-			event,
+			body: makeInviteEmailBody(sender, primaryEvent, message),
+			events: allEvents,
 			sender,
 		})
 	}
 
-	sendUpdate(event: CalendarEvent, sendMailModel: SendMailModel): Promise<void> {
+	sendUpdate(updatedEvent: CalendarEvent, allEvents: CalendarEvent[], sendMailModel: SendMailModel): Promise<void> {
 		const message = lang.get("eventUpdated_msg", {
-			"{event}": event.summary,
+			"{event}": updatedEvent.summary,
 		})
-		const sender = assertOrganizer(event).address
+		const sender = assertOrganizer(updatedEvent).address
 		return this._sendCalendarFile({
 			sendMailModel,
 			method: MailMethod.ICAL_REQUEST,
 			subject: message,
-			body: makeInviteEmailBody(sender, event, message),
-			event,
+			body: makeInviteEmailBody(sender, updatedEvent, message),
+			events: allEvents,
 			sender,
 		})
 	}
 
-	sendCancellation(event: CalendarEvent, sendMailModel: SendMailModel): Promise<void> {
+	sendCancellation(primaryEvent: CalendarEvent, allEvents: CalendarEvent[], sendMailModel: SendMailModel): Promise<void> {
 		const message = lang.get("eventCancelled_msg", {
-			"{event}": event.summary,
+			"{event}": primaryEvent.summary,
 		})
-		const sender = assertOrganizer(event).address
+		const sender = assertOrganizer(primaryEvent).address
 		return this._sendCalendarFile({
 			sendMailModel,
 			method: MailMethod.ICAL_CANCEL,
 			subject: message,
-			body: makeInviteEmailBody(sender, event, message),
-			event,
+			body: makeInviteEmailBody(sender, primaryEvent, message),
+			events: allEvents,
 			sender,
 		}).catch(
 			ofClass(RecipientsNotFoundError, (e) => {
@@ -94,7 +94,7 @@ export class CalendarMailDistributor implements CalendarUpdateDistributor {
 
 				// only try sending again if we successfully removed a recipient and there are still other recipients
 				if (hasRemovedRecipient && sendMailModel.allRecipients().length) {
-					return this.sendCancellation(event, sendMailModel)
+					return this.sendCancellation(primaryEvent, allEvents, sendMailModel)
 				}
 			}),
 		)
@@ -133,7 +133,7 @@ export class CalendarMailDistributor implements CalendarUpdateDistributor {
 					)
 				})
 				.then((model) => {
-					model.attachFiles([makeInvitationCalendarFile(event, CalendarMethod.REPLY, new Date(), getTimeZone())])
+					model.attachFiles([makeInvitationCalendarFile([event], CalendarMethod.REPLY, new Date(), getTimeZone())])
 					return model.send(MailMethod.ICAL_REPLY).then(noOp)
 				})
 				.finally(() => this._sendEnd())
@@ -143,7 +143,7 @@ export class CalendarMailDistributor implements CalendarUpdateDistributor {
 				method: MailMethod.ICAL_REPLY,
 				subject: message,
 				body,
-				event,
+				events: [event],
 				sender: sendAs,
 			})
 		}
@@ -153,18 +153,18 @@ export class CalendarMailDistributor implements CalendarUpdateDistributor {
 		sendMailModel,
 		method,
 		subject,
-		event,
+		events,
 		body,
 		sender,
 	}: {
 		sendMailModel: SendMailModel
 		method: MailMethod
 		subject: string
-		event: CalendarEvent
+		events: CalendarEvent[]
 		body: string
 		sender: string
 	}): Promise<void> {
-		const inviteFile = makeInvitationCalendarFile(event, mailMethodToCalendarMethod(method), new Date(), getTimeZone())
+		const inviteFile = makeInvitationCalendarFile(events, mailMethodToCalendarMethod(method), new Date(), getTimeZone())
 		sendMailModel.setSender(sender)
 		sendMailModel.attachFiles([inviteFile])
 		sendMailModel.setSubject(subject)
