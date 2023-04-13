@@ -581,7 +581,7 @@ o.spec("CalendarEventViewModel", function () {
 				distributor,
 			})
 
-			const newEvent = viewModel._initializeNewEvent()
+			const newEvent = viewModel.initializeNewEvent()
 
 			o(viewModel._hasChanges(newEvent)).equals(false)
 			newEvent.sequence = "7"
@@ -618,7 +618,7 @@ o.spec("CalendarEventViewModel", function () {
 				distributor,
 			})
 
-			let newEvent = viewModel._initializeNewEvent()
+			let newEvent = viewModel.initializeNewEvent()
 
 			o(viewModel._hasChanges(newEvent)).equals(false)
 			newEvent.description = "my test"
@@ -709,7 +709,7 @@ o.spec("CalendarEventViewModel", function () {
 				distributor,
 			})
 
-			let newEvent = viewModel._initializeNewEvent()
+			let newEvent = viewModel.initializeNewEvent()
 
 			o(viewModel._hasChanges(newEvent)).equals(false)
 			existingEvent.invitedConfidentially = false
@@ -744,7 +744,7 @@ o.spec("CalendarEventViewModel", function () {
 				distributor,
 			})
 
-			let newEvent = viewModel._initializeNewEvent()
+			let newEvent = viewModel.initializeNewEvent()
 
 			o(viewModel._hasChanges(newEvent)).equals(true)
 			existingEvent.uid = "MyUid"
@@ -755,7 +755,7 @@ o.spec("CalendarEventViewModel", function () {
 				calendarModel,
 				distributor,
 			})
-			newEvent = viewModel._initializeNewEvent()
+			newEvent = viewModel.initializeNewEvent()
 			o(viewModel._hasChanges(newEvent)).equals(false)
 		})
 	})

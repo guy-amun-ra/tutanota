@@ -109,6 +109,8 @@ type InitEventTypeReturn = {
 
 export type CalendarEventCreateData = { type: "new"; date: Date } | { type: "edit"; originalEvent: CalendarEvent; occurrenceEvent: CalendarEvent }
 
+type EditSeriesType = "single" | "all" | "cancel"
+
 /**
  * ViewModel for viewing/editing the event. Takes care of sending out updates.
  */
@@ -266,7 +268,7 @@ export class CalendarEventViewModel {
 		this.deleteExcludedDates()
 	}
 
-	async rescheduleOccurrence(updatedEvent: CalendarEvent) {
+	async rescheduleOccurrence(updatedEvent: CalendarEvent): Promise<CalendarEvent> {
 		// TODO move adding to exclusions here
 		if (this.editingData == null) {
 			throw new ProgrammingError("Not an event series")
@@ -289,7 +291,9 @@ export class CalendarEventViewModel {
 		})
 		const groupRoot = assertNotNull(this.selectedCalendar()).groupRoot
 
+		// FIXME is this okay or should the model actually return it? I think it muteates it anyway
 		await this._calendarModel.createEvent(newEvent, [], this._zone, groupRoot)
+		return newEvent
 	}
 
 	async _applyValuesFromExistingEvent(existingEvent: CalendarEvent, eventSeries: CalendarEvent, calendars: ReadonlyMap<Id, CalendarInfo>): Promise<void> {
@@ -869,8 +873,9 @@ export class CalendarEventViewModel {
 	 * the list of exclusions is maintained sorted from earliest to latest.
 	 */
 	async excludeThisOccurrence(): Promise<void> {
-		const existingEvent = this.editingData?.occurrenceEvent
-		if (existingEvent == null) return
+		const editingData = this.editingData
+		if (editingData == null) return
+		const existingEvent = editingData.occurrenceEvent
 		const selectedCalendar = this.selectedCalendar()
 		if (!selectedCalendar) return
 		// original event -> first occurrence of the series, the one that was created by the user
@@ -898,7 +903,7 @@ export class CalendarEventViewModel {
 			console.log("why does this event not have a calendar?")
 			return
 		}
-		await this._calendarModel.updateEvent(event, this.alarms.slice(), this._zone, calendarForEvent.groupRoot, existingEvent)
+		await this._calendarModel.updateEvent(event, this.alarms.slice(), this._zone, calendarForEvent.groupRoot, editingData.seriesEvent)
 	}
 
 	async waitForResolvedRecipients(): Promise<void> {
@@ -920,10 +925,12 @@ export class CalendarEventViewModel {
 		askForUpdates,
 		askInsecurePassword,
 		showProgress,
+		askSingleAllWholeSeries,
 	}: {
 		askForUpdates: () => Promise<"yes" | "no" | "cancel">
 		askInsecurePassword: () => Promise<boolean>
 		showProgress: ShowProgressCallback
+		askSingleAllWholeSeries: () => Promise<EditSeriesType>
 	}): Promise<EventCreateResult> {
 		await this.initialized
 
@@ -935,8 +942,25 @@ export class CalendarEventViewModel {
 		return Promise.resolve()
 			.then(async () => {
 				await this.waitForResolvedRecipients()
+				let editType: EditSeriesType = "cancel"
 
-				const newEvent = this._initializeNewEvent()
+				if (this.editingData?.seriesEvent.repeatRule && this.repeat) {
+					editType = await askSingleAllWholeSeries()
+					switch (editType) {
+						case "single":
+							await this.excludeThisOccurrence()
+							const newEvent = this.initializeNewEvent("occurrence")
+							await this.rescheduleOccurrence(newEvent)
+							// FIXME we should do everything else too
+							return true
+						case "all":
+							break
+						case "cancel":
+							return false
+					}
+				}
+
+				const newEvent = this.initializeNewEvent("series")
 
 				const newAlarms = this.alarms.slice()
 
@@ -1263,7 +1287,7 @@ export class CalendarEventViewModel {
 	/**
 	 * Keep in sync with _hasChanges().
 	 */
-	_initializeNewEvent(): CalendarEvent {
+	private initializeNewEvent(timeBase: "series" | "occurrence"): CalendarEvent {
 		// We have to use existing instance to get all the final fields correctly
 		// Using clone feels hacky but otherwise we need to save all attributes of the existing event somewhere and if dialog is
 		// cancelled we also don't want to modify passed event
@@ -1274,14 +1298,15 @@ export class CalendarEventViewModel {
 
 		if (this._allDay) {
 			if (this.editingData) {
+				const timeBaseEvent = timeBase === "series" ? this.editingData.seriesEvent : this.editingData.occurrenceEvent
 				const startDiff =
 					getAllDayDateUTCFromZone(startDate, this._zone).getTime() -
 					getAllDayDateUTCFromZone(this.editingData.occurrenceEvent.startTime, this._zone).getTime()
-				startDate = new Date(this.editingData.seriesEvent.startTime.getTime() + startDiff)
+				startDate = new Date(timeBaseEvent.startTime.getTime() + startDiff)
 				const endDiff =
 					getAllDayDateUTCFromZone(endDate, this._zone).getTime() -
 					getAllDayDateUTCFromZone(this.editingData.occurrenceEvent.endTime, this._zone).getTime()
-				endDate = new Date(this.editingData.seriesEvent.endTime.getTime() + endDiff)
+				endDate = new Date(timeBaseEvent.endTime.getTime() + endDiff)
 			} else {
 				startDate = getAllDayDateUTCFromZone(startDate, this._zone)
 				endDate = getAllDayDateUTCFromZone(getStartOfNextDayWithZone(endDate, this._zone), this._zone)
@@ -1313,11 +1338,12 @@ export class CalendarEventViewModel {
 				})
 				.toJSDate()
 			if (this.editingData) {
+				const timeBaseEvent = timeBase === "series" ? this.editingData.seriesEvent : this.editingData.occurrenceEvent
 				const startDiff = startDate.getTime() - this.editingData.occurrenceEvent.startTime.getTime()
-				startDate = new Date(this.editingData.seriesEvent.startTime.getTime() + startDiff)
+				startDate = new Date(timeBaseEvent.startTime.getTime() + startDiff)
 
 				const endDiff = endDate.getTime() - this.editingData.occurrenceEvent.endTime.getTime()
-				endDate = new Date(this.editingData.seriesEvent.endTime.getTime() + endDiff)
+				endDate = new Date(timeBaseEvent.endTime.getTime() + endDiff)
 			}
 		}
 

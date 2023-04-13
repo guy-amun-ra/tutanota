@@ -34,9 +34,9 @@ import type { CalendarInfo } from "../model/CalendarModel"
 import { showUserError } from "../../misc/ErrorHandlerImpl"
 import { RecipientType } from "../../api/common/recipients/Recipient"
 import { MailRecipientsTextField } from "../../gui/MailRecipientsTextField.js"
-import { noOp, numberRange, ofClass } from "@tutao/tutanota-utils"
-import { createDropdown } from "../../gui/base/Dropdown.js"
-import { CalendarEvent, createEncryptedMailAddress, Mail } from "../../api/entities/tutanota/TypeRefs.js"
+import { assertNotNull, defer, noOp, numberRange, ofClass } from "@tutao/tutanota-utils"
+import { createDropdown, Dropdown, PosRect } from "../../gui/base/Dropdown.js"
+import { createEncryptedMailAddress, Mail } from "../../api/entities/tutanota/TypeRefs.js"
 import { RecipientsSearchModel } from "../../misc/RecipientsSearchModel.js"
 import type { HtmlEditor } from "../../gui/editor/HtmlEditor.js"
 import { IconButton } from "../../gui/base/IconButton.js"
@@ -44,6 +44,7 @@ import { ButtonSize } from "../../gui/base/ButtonSize.js"
 import { ToggleButton } from "../../gui/base/ToggleButton.js"
 import { locator } from "../../api/main/MainLocator.js"
 import { findAttendeeInAddresses } from "../../api/common/utils/CommonCalendarUtils.js"
+import { modal } from "../../gui/base/Modal.js"
 
 export const iconForAttendeeStatus: Record<CalendarAttendeeStatus, AllIcons> = Object.freeze({
 	[CalendarAttendeeStatus.ACCEPTED]: Icons.CircleCheckmark,
@@ -101,14 +102,7 @@ export async function showCalendarEventDialog(
 	const recipientsSearch = await locator.recipientsSearchModel()
 	const mailboxProperties = await locator.mailModel.getMailboxProperties(mailboxDetail.mailboxGroupRoot)
 
-	const viewModel = await locator.calenderEventViewModel(
-		createData,
-		calendars,
-		mailboxDetail,
-		mailboxProperties,
-		responseMail ?? null,
-		false,
-	)
+	const viewModel = await locator.calenderEventViewModel(createData, calendars, mailboxDetail, mailboxProperties, responseMail ?? null, false)
 	const startOfTheWeekOffset = getStartOfTheWeekOffsetForUser(locator.logins.getUserController().userSettingsGroupRoot)
 	const groupColors = locator.logins.getUserController().userSettingsGroupRoot.groupSettings.reduce((acc, gc) => {
 		acc.set(gc.group, gc.color)
@@ -129,7 +123,7 @@ export async function showCalendarEventDialog(
 		})
 		.enableToolbar()
 
-	const okAction = () => {
+	const okAction = (posRect: PosRect) => {
 		if (finished) {
 			return
 		}
@@ -153,6 +147,29 @@ export async function showCalendarEventDialog(
 					askForUpdates: askIfShouldSendCalendarUpdatesToAttendees,
 					showProgress,
 					askInsecurePassword: () => Dialog.confirm("presharedPasswordNotStrongEnough_msg"),
+					askSingleAllWholeSeries: async () => {
+						const deferred = defer<"single" | "all" | "cancel">()
+						const dropdown = new Dropdown(
+							() => [
+								{
+									label: "updateOneEvent_action",
+									click: () => deferred.resolve("single"),
+								},
+								{
+									label: "updateAllEvents_action",
+									click: () => deferred.resolve("all"),
+								},
+							],
+							300,
+						)
+							.setCloseHandler(() => {
+								deferred.resolve("cancel")
+								dropdown.close()
+							})
+							.setOrigin(posRect)
+						modal.displayUnique(dropdown, false)
+						return deferred.promise
+					},
 				})
 				.catch(
 					ofClass(UserError, (e) => {
@@ -461,6 +478,7 @@ export async function showCalendarEventDialog(
 	}
 
 	viewModel.attendees.map(m.redraw)
+	let headerDom: HTMLElement | null = null
 	const dialogHeaderBarAttrs: DialogHeaderBarAttrs = {
 		left: [
 			{
@@ -470,6 +488,9 @@ export async function showCalendarEventDialog(
 			},
 		],
 		middle: () => lang.get("createEvent_label"), // right: save button is only added if the event is not read-only
+		create: (dom) => {
+			headerDom = dom
+		},
 	}
 	const dialog = Dialog.largeDialog(dialogHeaderBarAttrs, {
 		view: renderDialogContent,
@@ -483,14 +504,14 @@ export async function showCalendarEventDialog(
 		dialogHeaderBarAttrs.right = [
 			{
 				label: "save_action",
-				click: () => okAction(),
+				click: (event, dom) => okAction(dom.getBoundingClientRect()),
 				type: ButtonType.Primary,
 			},
 		]
 		dialog.addShortcut({
 			key: Keys.S,
 			ctrl: true,
-			exec: () => okAction(),
+			exec: () => okAction(assertNotNull(headerDom).getBoundingClientRect()),
 			help: "save_action",
 		})
 	}

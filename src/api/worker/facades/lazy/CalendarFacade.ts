@@ -403,15 +403,14 @@ export class CalendarFacade {
 							]),
 					)
 				if (!indexEntry) continue
-				const originalEvent = await this.entityClient.load(CalendarEventTypeRef, indexEntry.calendarEvent)
-				const rescheduledOccurrences = indexEntry.rescheduledOccurrences.length
+				const rescheduledOccurrences = indexEntry.calendarEvents.length
 					? await this.entityClient.loadMultiple(
 							CalendarEventTypeRef,
-							listIdPart(getFirstOrThrow(indexEntry.rescheduledOccurrences)),
-							indexEntry.rescheduledOccurrences.map(elementIdPart),
+							listIdPart(getFirstOrThrow(indexEntry.calendarEvents)),
+							indexEntry.calendarEvents.map(elementIdPart),
 					  )
 					: []
-				return [originalEvent, ...rescheduledOccurrences]
+				return rescheduledOccurrences
 			} catch (e) {
 				if (e instanceof NotFoundError || e instanceof NotAuthorizedError) {
 					continue
