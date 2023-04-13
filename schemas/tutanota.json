@@ -135,9 +135,14 @@
 					"info": "AddValue CalendarEvent/recurrenceId/1320."
 				},
 				{
+					"name": "ChangeAssociationCardinality",
+					"sourceType": "CalendarEventUidIndex",
+					"info": "ChangeAssociationCardinality CalendarEventUidIndex/calendarEvent/ZeroOrOne."
+				},
+				{
 					"name": "AddAssociation",
 					"sourceType": "CalendarEventUidIndex",
-					"info": "AddAssociation CalendarEventUidIndex/rescheduledOccurrences/LIST_ELEMENT_ASSOCIATION/1321."
+					"info": "AddAssociation CalendarEventUidIndex/calendarEvents/LIST_ELEMENT_ASSOCIATION/1321."
 				}
 			]
 		}

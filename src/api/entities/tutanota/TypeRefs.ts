@@ -133,8 +133,8 @@ export type CalendarEventUidIndex = {
 	_ownerGroup: null | Id;
 	_permissions: Id;
 
-	calendarEvent: IdTuple;
-	rescheduledOccurrences: IdTuple[];
+	calendarEvent:  null | IdTuple;
+	calendarEvents: IdTuple[];
 }
 export const CalendarEventUpdateTypeRef: TypeRef<CalendarEventUpdate> = new TypeRef("tutanota", "CalendarEventUpdate")
 

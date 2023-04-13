@@ -503,13 +503,13 @@ export const typeModels = {
                 "id": 1099,
                 "since": 42,
                 "type": "LIST_ELEMENT_ASSOCIATION",
-                "cardinality": "One",
+                "cardinality": "ZeroOrOne",
                 "refType": "CalendarEvent",
                 "dependency": null
             },
-            "rescheduledOccurrences": {
+            "calendarEvents": {
                 "final": false,
-                "name": "rescheduledOccurrences",
+                "name": "calendarEvents",
                 "id": 1321,
                 "since": 62,
                 "type": "LIST_ELEMENT_ASSOCIATION",
