@@ -16,14 +16,13 @@ export class DesktopImapImportSystemFacade implements ImapImportSystemFacade, Ad
 		if (this.imapAdSync === undefined) {
 			this.imapAdSync = new ImapAdSync(this)
 		}
-		return this.imapAdSync?.startAdSync(imapSyncState)
+		this.imapAdSync?.startAdSync(imapSyncState)
+		return Promise.resolve()
 	}
 
 	stopImport(): Promise<void> {
-		if (this.imapAdSync === undefined) {
-			return Promise.resolve()
-		}
-		return this.imapAdSync?.stopAdSync()
+		this.imapAdSync?.stopAdSync()
+		return Promise.resolve()
 	}
 
 	onError(error: ImapError): void {

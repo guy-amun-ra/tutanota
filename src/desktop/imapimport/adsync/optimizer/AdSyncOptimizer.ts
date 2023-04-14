@@ -29,6 +29,7 @@ export abstract class AdSyncOptimizer {
 	}
 
 	stopAdSyncOptimizer(): void {
+		// TODO interval is sometimes not correctly cleared
 		clearInterval(this.scheduler)
 	}
 

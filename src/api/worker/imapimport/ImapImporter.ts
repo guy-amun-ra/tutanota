@@ -35,7 +35,8 @@ export class ImapImporter implements ImapImportFacade {
 		private readonly imapImportSystemFacade: ImapImportSystemFacade,
 		private readonly importImapFacade: ImportImapFacade,
 		private readonly importMailFacade: ImportMailFacade,
-	) {}
+	) {
+	}
 
 	async initializeImport(initializeParams: InitializeImapImportParams): Promise<ImapImportState> {
 		let importImapAccountSyncState = await this.loadImportImapAccountSyncState()
@@ -51,26 +52,40 @@ export class ImapImporter implements ImapImportFacade {
 	}
 
 	async continueImport(): Promise<ImapImportState> {
+		if (this.imapImportState.state == ImportState.RUNNING) {
+			return this.imapImportState
+		}
+
 		this.importImapAccountSyncState = await this.loadImportImapAccountSyncState()
 
 		if (this.importImapAccountSyncState == null) {
 			this.imapImportState = new ImapImportState(ImportState.NOT_INITIALIZED)
 			return this.imapImportState
-		} else {
-			let imapAccount = importImapAccountToImapAccount(this.importImapAccountSyncState.imapAccount)
-			let maxQuota = parseInt(this.importImapAccountSyncState.maxQuota)
-			let imapMailboxStates = await this.getAllImapMailboxStates(this.importImapAccountSyncState.imapFolderSyncStateList)
-			let imapSyncState = new ImapSyncState(imapAccount, maxQuota, imapMailboxStates)
+		}
 
-			await this.imapImportSystemFacade.startImport(imapSyncState)
+		let postponedUntil = this.importImapAccountSyncState?.postponedUntil
+		if (postponedUntil) {
+			this.imapImportState.postponedUntil = new Date(postponedUntil)
+		}
 
-			// TODO remove after testing and evaluation
-			this.testMailCounter = 0
-			this.testDownloadStartTime.setTime(Date.now())
-
-			this.imapImportState = new ImapImportState(ImportState.RUNNING)
+		if (this.imapImportState.postponedUntil.getTime() > Date.now()) {
+			this.imapImportState.state = ImportState.POSTPONED
 			return this.imapImportState
 		}
+
+		let imapAccount = importImapAccountToImapAccount(this.importImapAccountSyncState.imapAccount)
+		let maxQuota = parseInt(this.importImapAccountSyncState.maxQuota)
+		let imapMailboxStates = await this.getAllImapMailboxStates(this.importImapAccountSyncState.imapFolderSyncStateList)
+		let imapSyncState = new ImapSyncState(imapAccount, maxQuota, imapMailboxStates)
+
+		await this.imapImportSystemFacade.startImport(imapSyncState)
+
+		// TODO remove after testing and evaluation
+		this.testMailCounter = 0
+		this.testDownloadStartTime.setTime(Date.now())
+
+		this.imapImportState = new ImapImportState(ImportState.RUNNING)
+		return this.imapImportState
 	}
 
 	async pauseImport(): Promise<ImapImportState> {
@@ -191,7 +206,7 @@ export class ImapImporter implements ImapImportFacade {
 
 		let folderSyncState = getFolderSyncStateForMailboxPath(imapMail.belongsToMailbox.path, this.importImapFolderSyncStates)
 		if (folderSyncState) {
-			let importMailParams = imapMailToImportMailParams(imapMail, folderSyncState?._id)
+			let importMailParams = imapMailToImportMailParams(imapMail, folderSyncState._id)
 
 			switch (eventType) {
 				case AdSyncEventType.CREATE:

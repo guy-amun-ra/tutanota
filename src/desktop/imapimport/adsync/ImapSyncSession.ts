@@ -46,11 +46,13 @@ export class ImapSyncSession implements SyncSessionEventListener {
 		this.state = SyncSessionState.PAUSED
 	}
 
+	// TODO return state here
 	async startSyncSession(imapSyncState: ImapSyncState): Promise<void> {
-		this.imapSyncState = imapSyncState
-		this.state = SyncSessionState.RUNNING
-
-		this.runSyncSession()
+		if (this.state != SyncSessionState.RUNNING) {
+			this.state = SyncSessionState.RUNNING
+			this.imapSyncState = imapSyncState
+			this.runSyncSession()
+		}
 		return
 	}
 
@@ -108,8 +110,6 @@ export class ImapSyncSession implements SyncSessionEventListener {
 				pass: imapAccount.password,
 				accessToken: imapAccount.accessToken,
 			},
-			// @ts-ignore // TODO add type definitions
-			qresync: this.adSyncConfig.isEnableImapQresync,
 		})
 
 		await imapClient.connect()
@@ -194,7 +194,7 @@ export class ImapSyncSession implements SyncSessionEventListener {
 					// TODO we may have exceeded a rate limit on the number of parallel connections
 					this.adSyncOptimizer?.forceStopSyncSessionProcess(processId)
 				} else {
-					if (this.adSyncConfig.isEnableDownloadBlockSizeOptimizer) {
+					if (this.adSyncConfig.isEnableDownloadBlockSizeOptimizer && this.state == SyncSessionState.RUNNING) {
 						adSyncDownloadBlockSizeOptimizer.startAdSyncOptimizer()
 					}
 				}
