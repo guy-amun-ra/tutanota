@@ -6,7 +6,7 @@ import {
 	getAverageOfList,
 	Throughput,
 	TimeIntervalTimeStamp,
-	TimeStamp
+	TimeStamp,
 } from "./utils/AdSyncUtils.js"
 import { ImapMailboxSpecialUse } from "./imapmail/ImapMailbox.js"
 
@@ -14,7 +14,7 @@ export enum SyncSessionMailboxImportance {
 	NO_SYNC = 0,
 	LOW = 1,
 	MEDIUM = 2,
-	HIGH = 3
+	HIGH = 3,
 }
 
 export class ImapSyncSessionMailbox {
@@ -78,7 +78,10 @@ export class ImapSyncSessionMailbox {
 	getAverageEfficiencyScoreInTimeInterval(fromTimeStamp: TimeStamp, toTimeStamp: TimeStamp): AverageEfficiencyScore {
 		let key = `${fromTimeStamp}${toTimeStamp}`
 		let averageExists = this.averageThroughputInTimeIntervalHistory.has(key)
-		return this.importance * (averageExists ? this.averageThroughputInTimeIntervalHistory.get(key)! : this.getAverageThroughputInTimeInterval(fromTimeStamp, toTimeStamp))
+		return (
+			this.importance *
+			(averageExists ? this.averageThroughputInTimeIntervalHistory.get(key)! : this.getAverageThroughputInTimeInterval(fromTimeStamp, toTimeStamp))
+		)
 	}
 
 	getDownloadBlockSizeInTimeInterval(fromTimeStamp: TimeStamp, toTimeStamp: TimeStamp): DownloadBlockSize {

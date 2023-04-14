@@ -122,47 +122,47 @@ export class ApplicationWindow {
 		).concat(
 			isMac
 				? [
-					{
-						key: Keys.F,
-						meta: true,
-						ctrl: true,
-						exec: () => this.toggleFullScreen(),
-						help: "toggleFullScreen_action",
-					},
-				]
-				: [
-					{
-						key: Keys.F11,
-						exec: () => this.toggleFullScreen(),
-						help: "toggleFullScreen_action",
-					},
-					{
-						key: Keys.RIGHT,
-						alt: true,
-						exec: () => this._browserWindow.webContents.goForward(),
-						help: "pageForward_label",
-					},
-					{
-						key: Keys.LEFT,
-						alt: true,
-						exec: () => this.tryGoBack(),
-						help: "pageBackward_label",
-					},
-					{
-						key: Keys.H,
-						ctrl: true,
-						exec: () => wm.minimize(),
-						help: "hideWindows_action",
-					},
-					{
-						key: Keys.N,
-						ctrl: true,
-						exec: () => {
-							wm.newWindow(true)
+						{
+							key: Keys.F,
+							meta: true,
+							ctrl: true,
+							exec: () => this.toggleFullScreen(),
+							help: "toggleFullScreen_action",
 						},
-						help: "openNewWindow_action",
-					},
-				],
+				  ]
+				: [
+						{
+							key: Keys.F11,
+							exec: () => this.toggleFullScreen(),
+							help: "toggleFullScreen_action",
+						},
+						{
+							key: Keys.RIGHT,
+							alt: true,
+							exec: () => this._browserWindow.webContents.goForward(),
+							help: "pageForward_label",
+						},
+						{
+							key: Keys.LEFT,
+							alt: true,
+							exec: () => this.tryGoBack(),
+							help: "pageBackward_label",
+						},
+						{
+							key: Keys.H,
+							ctrl: true,
+							exec: () => wm.minimize(),
+							help: "hideWindows_action",
+						},
+						{
+							key: Keys.N,
+							ctrl: true,
+							exec: () => {
+								wm.newWindow(true)
+							},
+							help: "openNewWindow_action",
+						},
+				  ],
 		)
 		log.debug(TAG, "webAssetsPath: ", this.absoluteAssetsPath)
 		const preloadPath = path.join(this.electron.app.getAppPath(), "./desktop/preload.js")

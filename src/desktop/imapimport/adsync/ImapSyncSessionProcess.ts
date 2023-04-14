@@ -10,10 +10,9 @@ import { FetchUidRange } from "./utils/FetchUidRange.js"
 import { AdSyncConfig } from "./ImapAdSync.js"
 import { AdSyncProcessesOptimizerEventListener } from "./optimizer/processesoptimizer/AdSyncProcessesOptimizer.js"
 
-const { ImapFlow } = require('imapflow');
+const { ImapFlow } = require("imapflow")
 
 export enum SyncSessionProcessState {
-
 	NOT_STARTED,
 	STOPPED,
 	RUNNING,
@@ -28,7 +27,12 @@ export class ImapSyncSessionProcess {
 	private adSyncProcessesOptimizerEventListener: AdSyncProcessesOptimizerEventListener
 	private adSyncConfig: AdSyncConfig
 
-	constructor(processId: number, adSyncOptimizer: AdSyncDownloadBlockSizeOptimizer, adSyncProcessesOptimizerEventListener: AdSyncProcessesOptimizerEventListener, adSyncConfig: AdSyncConfig) {
+	constructor(
+		processId: number,
+		adSyncOptimizer: AdSyncDownloadBlockSizeOptimizer,
+		adSyncProcessesOptimizerEventListener: AdSyncProcessesOptimizerEventListener,
+		adSyncConfig: AdSyncConfig,
+	) {
 		this.processId = processId
 		this.adSyncOptimizer = adSyncOptimizer
 		this.adSyncProcessesOptimizerEventListener = adSyncProcessesOptimizerEventListener
@@ -47,7 +51,7 @@ export class ImapSyncSessionProcess {
 			auth: {
 				user: imapAccount.username,
 				pass: imapAccount.password,
-				accessToken: imapAccount.accessToken
+				accessToken: imapAccount.accessToken,
 			},
 			// @ts-ignore
 			qresync: this.adSyncConfig.isEnableImapQresync, // TODO add type definitions
@@ -77,15 +81,12 @@ export class ImapSyncSessionProcess {
 			await imapClient.logout()
 		}
 
-		let status = await imapClient.status(
-			this.adSyncOptimizer.optimizedSyncSessionMailbox.mailboxState.path,
-			{
-				messages: true,
-				uidNext: true,
-				uidValidity: true,
-				highestModseq: true,
-			}
-		)
+		let status = await imapClient.status(this.adSyncOptimizer.optimizedSyncSessionMailbox.mailboxState.path, {
+			messages: true,
+			uidNext: true,
+			uidValidity: true,
+			highestModseq: true,
+		})
 
 		let imapMailboxStatus = ImapMailboxStatus.fromImapFlowStatusObject(status)
 		this.updateMailboxState(imapMailboxStatus)
@@ -100,7 +101,9 @@ export class ImapSyncSessionProcess {
 
 			let fetchOptions = {}
 			if (this.adSyncConfig.isEnableImapQresync) {
-				let importedModSequences = [...this.adSyncOptimizer.optimizedSyncSessionMailbox.mailboxState.importedUidToIdsMap.values()].map(value => value.modSeq ? value.modSeq : 0)
+				let importedModSequences = [...this.adSyncOptimizer.optimizedSyncSessionMailbox.mailboxState.importedUidToIdsMap.values()].map((value) =>
+					value.modSeq ? value.modSeq : 0,
+				)
 				let highestModSeq = Math.max(...importedModSequences)
 				fetchOptions = {
 					uid: true,
@@ -130,7 +133,6 @@ export class ImapSyncSessionProcess {
 					fetchOptions,
 				)
 
-
 				for await (const mail of mails) {
 					if (this.state == SyncSessionProcessState.STOPPED) {
 						await releaseLockAndLogout()
@@ -147,16 +149,15 @@ export class ImapSyncSessionProcess {
 						let currenThroughput = mailSize / mailDownloadTime
 						this.adSyncOptimizer.optimizedSyncSessionMailbox.reportCurrentThroughput(currenThroughput)
 
-						this.adSyncProcessesOptimizerEventListener.onDownloadUpdate(
-							this.processId,
-							this.adSyncOptimizer.optimizedSyncSessionMailbox,
-							mailSize
-						)
+						this.adSyncProcessesOptimizerEventListener.onDownloadUpdate(this.processId, this.adSyncOptimizer.optimizedSyncSessionMailbox, mailSize)
 					} else {
 						adSyncEventListener.onError(new ImapError(mail))
 					}
 
-					let imapMail = await ImapMail.fromImapFlowFetchMessageObject(mail, ImapMailbox.fromSyncSessionMailbox(this.adSyncOptimizer.optimizedSyncSessionMailbox))
+					let imapMail = await ImapMail.fromImapFlowFetchMessageObject(
+						mail,
+						ImapMailbox.fromSyncSessionMailbox(this.adSyncOptimizer.optimizedSyncSessionMailbox),
+					)
 
 					// TODO What happens if only flags updated but IMAP server does not support QRESYNC?
 					// TODO Check if email is already downloaded before downloading the actual data
@@ -164,7 +165,10 @@ export class ImapSyncSessionProcess {
 					if (isMailUpdate) {
 						adSyncEventListener.onMail(imapMail, AdSyncEventType.UPDATE)
 					} else {
-						this.adSyncOptimizer.optimizedSyncSessionMailbox.mailboxState.importedUidToIdsMap.set(imapMail.uid, new ImapMailboxStateImportedIds(imapMail.uid))
+						this.adSyncOptimizer.optimizedSyncSessionMailbox.mailboxState.importedUidToIdsMap.set(
+							imapMail.uid,
+							new ImapMailboxStateImportedIds(imapMail.uid),
+						)
 						adSyncEventListener.onMail(imapMail, AdSyncEventType.CREATE)
 					}
 				}
@@ -187,7 +191,7 @@ export class ImapSyncSessionProcess {
 		await fetchUidRange.initFetchUidRange(
 			isInitialSeqFetch ? 1 : lastFetchedUid,
 			this.adSyncOptimizer.optimizedSyncSessionMailbox.downloadBlockSize,
-			!isInitialSeqFetch
+			!isInitialSeqFetch,
 		)
 		return fetchUidRange
 	}
@@ -199,4 +203,3 @@ export class ImapSyncSessionProcess {
 		mailboxState.highestModSeq = imapMailboxStatus.highestModSeq
 	}
 }
-

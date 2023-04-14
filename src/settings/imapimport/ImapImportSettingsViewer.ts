@@ -93,7 +93,7 @@ export class ImapImportSettingsViewer implements UpdatableSettingsViewer {
 		const model = new ImapImportModel(imapImportModelConfig)
 
 		const addImapImportData: AddImapImportData = {
-			model: model
+			model: model,
 		}
 
 		return [
@@ -110,7 +110,6 @@ export class ImapImportSettingsViewer implements UpdatableSettingsViewer {
 	}
 
 	private renderImapImportStatusCard(): Children {
-
 		const continueImapImportIconButtonAttrs: IconButtonAttrs = {
 			title: "continueImapImport_action",
 			icon: Icons.Play,
@@ -122,10 +121,11 @@ export class ImapImportSettingsViewer implements UpdatableSettingsViewer {
 			title: "pauseImapImport_action",
 			icon: Icons.Pause,
 			click: () => this.pauseImapImport(),
-			size: ButtonSize.Normal
+			size: ButtonSize.Normal,
 		}
 
-		return m(".border-radius-big",
+		return m(
+			".border-radius-big",
 			{
 				style: {
 					border: `1px solid ${theme.content_accent}`,
@@ -133,21 +133,28 @@ export class ImapImportSettingsViewer implements UpdatableSettingsViewer {
 					marginTop: px(48),
 					padding: px(16),
 				},
-			}, [
+			},
+			[
 				m("center.mb-s.text-center", [
-					m(".h4.b.teamLabel.pl-s.pr-s.border-radius-big.mb-s", lang.get(this.getReadableImapImportStatus(), {
-						"{postponedUntil}": formatDateTime(this.imapImportState().postponedUntil)
-					})),
-					m(".h5", lang.get("imapImportStatusImportedMailCount_label", {
-							"{importedMailCount}": this.importedMailCount()
-						})
+					m(
+						".h4.b.teamLabel.pl-s.pr-s.border-radius-big.mb-s",
+						lang.get(this.getReadableImapImportStatus(), {
+							"{postponedUntil}": formatDateTime(this.imapImportState().postponedUntil),
+						}),
+					),
+					m(
+						".h5",
+						lang.get("imapImportStatusImportedMailCount_label", {
+							"{importedMailCount}": this.importedMailCount(),
+						}),
 					),
 				]),
 				m("center", [
 					this.imapImportState().state != ImportState.RUNNING ? m(IconButton, continueImapImportIconButtonAttrs) : null,
 					this.imapImportState().state == ImportState.RUNNING ? m(IconButton, pauseImapImportIconButtonAttrs) : null,
-				])
-			])
+				]),
+			],
+		)
 	}
 
 	private getReadableImapImportStatus(): TranslationKey {

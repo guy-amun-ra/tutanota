@@ -8,9 +8,7 @@ import { ImapMailbox, ImapMailboxStatus } from "./adsync/imapmail/ImapMailbox.js
 import { ApplicationWindow } from "../ApplicationWindow.js"
 
 export class DesktopImapImportSystemFacade implements ImapImportSystemFacade, AdSyncEventListener {
-
-	constructor(private readonly win: ApplicationWindow) {
-	}
+	constructor(private readonly win: ApplicationWindow) {}
 
 	private imapAdSync?: ImapAdSync
 

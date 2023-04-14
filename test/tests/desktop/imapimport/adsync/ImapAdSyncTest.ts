@@ -1,7 +1,7 @@
 import o from "ospec"
-import {ImapAdSync} from "../../../../../src/desktop/imapimport/adsync/ImapAdSync.js"
-import {ImapAccount, ImapSyncState, ImapMailboxState} from "../../../../../src/desktop/imapimport/adsync/ImapSyncState.js"
-import {ImapImporter} from "../../../../../src/desktop/imapimport/ImapImporter.js"
+import { ImapAdSync } from "../../../../../src/desktop/imapimport/adsync/ImapAdSync.js"
+import { ImapAccount, ImapSyncState, ImapMailboxState } from "../../../../../src/desktop/imapimport/adsync/ImapSyncState.js"
+import { ImapImporter } from "../../../../../src/desktop/imapimport/ImapImporter.js"
 
 o.spec("ImapAdSyncTest", function () {
 	let imapImporter: ImapImporter

@@ -1,4 +1,4 @@
-import {ImapSyncSessionMailbox} from "../ImapSyncSessionMailbox.js"
+import { ImapSyncSessionMailbox } from "../ImapSyncSessionMailbox.js"
 
 export class ImapMailboxStatus {
 	path: string
@@ -33,7 +33,6 @@ export class ImapMailboxStatus {
 	}
 }
 
-
 export enum ImapMailboxSpecialUse {
 	INBOX = "\\Inbox",
 	SENT = "\\Sent",
@@ -46,7 +45,6 @@ export enum ImapMailboxSpecialUse {
 }
 
 export class ImapMailbox {
-
 	name?: string
 	path: string
 	pathDelimiter?: string

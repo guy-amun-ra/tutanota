@@ -24,23 +24,39 @@ export class AdSyncDownloadBlockSizeOptimizer extends AdSyncOptimizer {
 	protected optimize(): void {
 		let currentInterval = this.getCurrentTimeStampInterval()
 		let lastInterval = this.getLastTimeStampInterval()
-		let averageThroughputCurrent = this.optimizedSyncSessionMailbox.getAverageThroughputInTimeInterval(currentInterval.fromTimeStamp, currentInterval.toTimeStamp)
+		let averageThroughputCurrent = this.optimizedSyncSessionMailbox.getAverageThroughputInTimeInterval(
+			currentInterval.fromTimeStamp,
+			currentInterval.toTimeStamp,
+		)
 		let averageThroughputLast = this.optimizedSyncSessionMailbox.getAverageThroughputInTimeInterval(lastInterval.fromTimeStamp, lastInterval.toTimeStamp)
-		console.log("(DownloadBlockSizeOptimizer -> " + this.optimizedSyncSessionMailbox.mailboxState.path + " : last downloadBlockSize | " + this.optimizedSyncSessionMailbox.downloadBlockSize + " |) Throughput stats: ... | " + averageThroughputLast + " | " + averageThroughputCurrent + " |")
+		console.log(
+			"(DownloadBlockSizeOptimizer -> " +
+				this.optimizedSyncSessionMailbox.mailboxState.path +
+				" : last downloadBlockSize | " +
+				this.optimizedSyncSessionMailbox.downloadBlockSize +
+				" |) Throughput stats: ... | " +
+				averageThroughputLast +
+				" | " +
+				averageThroughputCurrent +
+				" |",
+		)
 
-		let downloadBlockSizeCurrent = this.optimizedSyncSessionMailbox.getDownloadBlockSizeInTimeInterval(currentInterval.fromTimeStamp, currentInterval.toTimeStamp)
+		let downloadBlockSizeCurrent = this.optimizedSyncSessionMailbox.getDownloadBlockSizeInTimeInterval(
+			currentInterval.fromTimeStamp,
+			currentInterval.toTimeStamp,
+		)
 		let downloadBlockSizeLast = this.optimizedSyncSessionMailbox.getDownloadBlockSizeInTimeInterval(lastInterval.fromTimeStamp, lastInterval.toTimeStamp)
-		let downloadBlockSizeDidIncrease = (downloadBlockSizeCurrent - downloadBlockSizeLast) >= 0
+		let downloadBlockSizeDidIncrease = downloadBlockSizeCurrent - downloadBlockSizeLast >= 0
 
 		if (averageThroughputCurrent + THROUGHPUT_THRESHOLD >= averageThroughputLast) {
 			if (downloadBlockSizeDidIncrease) {
-				this.optimizedSyncSessionMailbox.downloadBlockSize = (this.optimizedSyncSessionMailbox.downloadBlockSize + this.optimizationDifference)
+				this.optimizedSyncSessionMailbox.downloadBlockSize = this.optimizedSyncSessionMailbox.downloadBlockSize + this.optimizationDifference
 			} else if (this.optimizedSyncSessionMailbox.downloadBlockSize - this.optimizationDifference > 0) {
-				this.optimizedSyncSessionMailbox.downloadBlockSize = (this.optimizedSyncSessionMailbox.downloadBlockSize - this.optimizationDifference)
+				this.optimizedSyncSessionMailbox.downloadBlockSize = this.optimizedSyncSessionMailbox.downloadBlockSize - this.optimizationDifference
 			}
 		} else {
 			if (downloadBlockSizeDidIncrease && this.optimizedSyncSessionMailbox.downloadBlockSize - this.optimizationDifference > 0) {
-				this.optimizedSyncSessionMailbox.downloadBlockSize = (this.optimizedSyncSessionMailbox.downloadBlockSize - this.optimizationDifference)
+				this.optimizedSyncSessionMailbox.downloadBlockSize = this.optimizedSyncSessionMailbox.downloadBlockSize - this.optimizationDifference
 			}
 		}
 

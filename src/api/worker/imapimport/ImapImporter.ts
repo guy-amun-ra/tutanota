@@ -27,7 +27,6 @@ export class ImapImporter implements ImapImportFacade {
 	private importImapAccountSyncState: ImportImapAccountSyncState | null = null
 	private importImapFolderSyncStates?: ImportImapFolderSyncState[]
 
-
 	// TODO remove after testing and evaluation
 	private testMailCounter = 0
 	private testDownloadStartTime: Date = new Date()
@@ -35,9 +34,8 @@ export class ImapImporter implements ImapImportFacade {
 	constructor(
 		private readonly imapImportSystemFacade: ImapImportSystemFacade,
 		private readonly importImapFacade: ImportImapFacade,
-		private readonly importMailFacade: ImportMailFacade
-	) {
-	}
+		private readonly importMailFacade: ImportMailFacade,
+	) {}
 
 	async initializeImport(initializeParams: InitializeImapImportParams): Promise<ImapImportState> {
 		let importImapAccountSyncState = await this.loadImportImapAccountSyncState()
@@ -112,7 +110,7 @@ export class ImapImporter implements ImapImportFacade {
 		for (const folderSyncState of this.importImapFolderSyncStates) {
 			let importImapUidToIdsMap = new Map<number, ImapMailboxStateImportedIds>()
 			let importImapUidToMailIdMapList = await this.importImapFacade.getImportedImapUidToMailIdsMap(folderSyncState.importedImapUidToMailIdsMap)
-			importImapUidToMailIdMapList.forEach(importImapUidToMailIds => {
+			importImapUidToMailIdMapList.forEach((importImapUidToMailIds) => {
 				let imapUid = parseInt(importImapUidToMailIds.imapUid)
 				let imapMailboxStateImportedIds = new ImapMailboxStateImportedIds(imapUid)
 				if (importImapUidToMailIds.imapModSeq != null) {
@@ -151,11 +149,11 @@ export class ImapImporter implements ImapImportFacade {
 				if (newFolderSyncState) {
 					this.importImapFolderSyncStates?.push(newFolderSyncState)
 				}
-				break;
+				break
 			case AdSyncEventType.UPDATE:
-				break;
+				break
 			case AdSyncEventType.DELETE:
-				break;
+				break
 		}
 
 		return Promise.resolve()
@@ -173,7 +171,7 @@ export class ImapImporter implements ImapImportFacade {
 		if (folderSyncState) {
 			const newFolderSyncState = await this.importImapFacade.updateImportImapFolderSyncState(imapMailboxStatus, folderSyncState)
 
-			let index = this.importImapFolderSyncStates.findIndex(folderSyncState => folderSyncState.path == newFolderSyncState.path)
+			let index = this.importImapFolderSyncStates.findIndex((folderSyncState) => folderSyncState.path == newFolderSyncState.path)
 			this.importImapFolderSyncStates[index] = newFolderSyncState
 		}
 
@@ -193,7 +191,6 @@ export class ImapImporter implements ImapImportFacade {
 
 		let folderSyncState = getFolderSyncStateForMailboxPath(imapMail.belongsToMailbox.path, this.importImapFolderSyncStates)
 		if (folderSyncState) {
-
 			let importMailParams = imapMailToImportMailParams(imapMail, folderSyncState?._id)
 
 			switch (eventType) {
@@ -201,12 +198,12 @@ export class ImapImporter implements ImapImportFacade {
 					// TODO handle Tutanota rate limits
 					// if rate limit -> stop adSync and postpone
 					this.importMailFacade.importMail(importMailParams)
-					break;
+					break
 				case AdSyncEventType.UPDATE:
 					//this.importMailFacade.updateMail(importMailParams) // TODO update mail properties through existing tutanota apis (unread / read, etc)
-					break;
+					break
 				case AdSyncEventType.DELETE:
-					break;
+					break
 			}
 		}
 

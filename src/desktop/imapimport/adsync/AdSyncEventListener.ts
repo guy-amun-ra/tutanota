@@ -9,7 +9,6 @@ export enum AdSyncEventType {
 }
 
 export interface AdSyncEventListener {
-
 	onMailbox(imapMailbox: ImapMailbox, eventType: AdSyncEventType): void
 
 	onMailboxStatus(imapMailboxStatus: ImapMailboxStatus): void

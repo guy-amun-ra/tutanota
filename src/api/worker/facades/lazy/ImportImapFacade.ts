@@ -22,7 +22,7 @@ import {
 	ImportImapUidToMailIdsTypeRef,
 	MailboxGroupRootTypeRef,
 	MailFolder,
-	MailFolderTypeRef
+	MailFolderTypeRef,
 } from "../../../entities/tutanota/TypeRefs.js"
 import { ImportImapFolderService, ImportImapService } from "../../../entities/tutanota/Services.js"
 import { GroupType } from "../../../common/TutanotaConstants.js"
@@ -30,14 +30,12 @@ import { InitializeImapImportParams } from "../../imapimport/ImapImporter.js"
 import { ImapMailbox, ImapMailboxStatus } from "../../../../desktop/imapimport/adsync/imapmail/ImapMailbox.js"
 
 export class ImportImapFacade {
-
 	constructor(
 		private readonly userFacade: UserFacade,
 		private readonly mailFacade: MailFacade,
 		private readonly serviceExecutor: IServiceExecutor,
-		private readonly entityClient: EntityClient
-	) {
-	}
+		private readonly entityClient: EntityClient,
+	) {}
 
 	async initializeImapImport(initializeParams: InitializeImapImportParams): Promise<ImportImapAccountSyncState> {
 		const mailGroupId = this.userFacade.getGroupId(GroupType.Mail)
@@ -49,7 +47,7 @@ export class ImportImapFacade {
 			port: initializeParams.port,
 			userName: initializeParams.username,
 			password: initializeParams.password,
-			accessToken: initializeParams.accessToken
+			accessToken: initializeParams.accessToken,
 		})
 
 		const mailGroupKey = this.userFacade.getGroupKey(mailGroupId)
@@ -60,14 +58,17 @@ export class ImportImapFacade {
 			imapAccount: importImapAccount,
 			maxQuota: initializeParams.maxQuota,
 			postponedUntil: Date.now().toString(),
-			rootImportMailFolder: rootImportMailFolder._id
+			rootImportMailFolder: rootImportMailFolder._id,
 		})
 
 		const importImapPostOut = await this.serviceExecutor.post(ImportImapService, importImapPostIn, { sessionKey: sk })
 		return this.entityClient.load(ImportImapAccountSyncStateTypeRef, importImapPostOut.imapAccountSyncState)
 	}
 
-	async updateImapImport(initializeParams: InitializeImapImportParams, importImapAccountSyncState: ImportImapAccountSyncState): Promise<ImportImapAccountSyncState> {
+	async updateImapImport(
+		initializeParams: InitializeImapImportParams,
+		importImapAccountSyncState: ImportImapAccountSyncState,
+	): Promise<ImportImapAccountSyncState> {
 		const mailGroupId = this.userFacade.getGroupId(GroupType.Mail)
 
 		let newRootImportMailFolderName = initializeParams.rootImportMailFolderName
@@ -88,7 +89,11 @@ export class ImportImapFacade {
 		return this.entityClient.load(ImportImapAccountSyncStateTypeRef, importImapAccountSyncState._id)
 	}
 
-	async createImportMailFolder(imapMailbox: ImapMailbox, accountSyncState: ImportImapAccountSyncState, parentFolderId: IdTuple | null,): Promise<ImportImapFolderSyncState | undefined> {
+	async createImportMailFolder(
+		imapMailbox: ImapMailbox,
+		accountSyncState: ImportImapAccountSyncState,
+		parentFolderId: IdTuple | null,
+	): Promise<ImportImapFolderSyncState | undefined> {
 		if (imapMailbox.name) {
 			const mailGroupId = this.userFacade.getGroupId(GroupType.Mail)
 			const newMailFolder = await this.mailFacade.createMailFolder(imapMailbox.name, parentFolderId, mailGroupId)
@@ -100,7 +105,7 @@ export class ImportImapFacade {
 				ownerGroup: mailGroupId,
 				path: imapMailbox.path,
 				imapAccountSyncState: accountSyncState._id,
-				mailFolder: newMailFolder._id
+				mailFolder: newMailFolder._id,
 			})
 
 			const importImapFolderPostOut = await this.serviceExecutor.post(ImportImapFolderService, importImapFolderPostIn, { sessionKey: sk })
@@ -112,12 +117,15 @@ export class ImportImapFacade {
 		await this.mailFacade.deleteFolder(folderSyncState.mailFolder)
 
 		const importImapFolderDeleteIn = createImportImapFolderDeleteIn({
-			imapFolderSyncState: folderSyncState._id
+			imapFolderSyncState: folderSyncState._id,
 		})
 		await this.serviceExecutor.delete(ImportImapFolderService, importImapFolderDeleteIn)
 	}
 
-	async updateImportImapFolderSyncState(imapMailboxStatus: ImapMailboxStatus, folderSyncState: ImportImapFolderSyncState): Promise<ImportImapFolderSyncState> {
+	async updateImportImapFolderSyncState(
+		imapMailboxStatus: ImapMailboxStatus,
+		folderSyncState: ImportImapFolderSyncState,
+	): Promise<ImportImapFolderSyncState> {
 		folderSyncState.uidnext = imapMailboxStatus.uidNext.toString()
 		folderSyncState.uidvalidity = imapMailboxStatus.uidValidity.toString()
 		folderSyncState.highestmodseq = (imapMailboxStatus.highestModSeq ? imapMailboxStatus.highestModSeq : 0).toString() // value 0 denotes that the mailbox doesn't support persistent mod-sequences (see RFC4551)

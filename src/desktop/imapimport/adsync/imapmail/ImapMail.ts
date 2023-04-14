@@ -20,9 +20,7 @@ export class ImapMailAddress {
 
 	// TODO define type
 	static fromMailParserAddressObject(mailParserAddressObject: any): ImapMailAddress {
-		return new ImapMailAddress()
-			.setName(mailParserAddressObject.name as string)
-			.setAddress(mailParserAddressObject.address as string)
+		return new ImapMailAddress().setName(mailParserAddressObject.name as string).setAddress(mailParserAddressObject.address as string)
 	}
 }
 
@@ -97,50 +95,62 @@ export class ImapMailEnvelope {
 	static fromMailParserHeadersMap(mailParserHeadersMap: Map<string, string | string[] | MailParserAddressObject | Date | object>) {
 		let imapMailEnvelope = new ImapMailEnvelope()
 
-		if (mailParserHeadersMap.has('date')) {
-			imapMailEnvelope.setDate(mailParserHeadersMap.get('date') as Date)
+		if (mailParserHeadersMap.has("date")) {
+			imapMailEnvelope.setDate(mailParserHeadersMap.get("date") as Date)
 		}
 
-		if (mailParserHeadersMap.has('subject')) {
-			imapMailEnvelope.setSubject(mailParserHeadersMap.get('subject') as string)
+		if (mailParserHeadersMap.has("subject")) {
+			imapMailEnvelope.setSubject(mailParserHeadersMap.get("subject") as string)
 		}
 
-		if (mailParserHeadersMap.has('message-id')) {
-			imapMailEnvelope.setMessageId(mailParserHeadersMap.get('message-id') as string)
+		if (mailParserHeadersMap.has("message-id")) {
+			imapMailEnvelope.setMessageId(mailParserHeadersMap.get("message-id") as string)
 		}
 
-		if (mailParserHeadersMap.has('in-reply-to')) {
-			imapMailEnvelope.setInReplyTo(mailParserHeadersMap.get('in-reply-to') as string)
+		if (mailParserHeadersMap.has("in-reply-to")) {
+			imapMailEnvelope.setInReplyTo(mailParserHeadersMap.get("in-reply-to") as string)
 		}
 
-		if (mailParserHeadersMap.has('references')) {
-			let headerReferences = mailParserHeadersMap.get('references')
-			let references = typeof headerReferences === 'string' ? [headerReferences] : headerReferences as string[]
+		if (mailParserHeadersMap.has("references")) {
+			let headerReferences = mailParserHeadersMap.get("references")
+			let references = typeof headerReferences === "string" ? [headerReferences] : (headerReferences as string[])
 			imapMailEnvelope.setReferences(references)
 		}
 
-		if (mailParserHeadersMap.has('from')) {
-			imapMailEnvelope.setFrom((mailParserHeadersMap.get('from') as MailParserAddressObject).value.map(from => ImapMailAddress.fromMailParserAddressObject(from)))
+		if (mailParserHeadersMap.has("from")) {
+			imapMailEnvelope.setFrom(
+				(mailParserHeadersMap.get("from") as MailParserAddressObject).value.map((from) => ImapMailAddress.fromMailParserAddressObject(from)),
+			)
 		}
 
-		if (mailParserHeadersMap.has('sender')) {
-			imapMailEnvelope.setSender((mailParserHeadersMap.get('sender') as MailParserAddressObject).value.map(sender => ImapMailAddress.fromMailParserAddressObject(sender)))
+		if (mailParserHeadersMap.has("sender")) {
+			imapMailEnvelope.setSender(
+				(mailParserHeadersMap.get("sender") as MailParserAddressObject).value.map((sender) => ImapMailAddress.fromMailParserAddressObject(sender)),
+			)
 		}
 
-		if (mailParserHeadersMap.has('to')) {
-			imapMailEnvelope.setTo((mailParserHeadersMap.get('to') as MailParserAddressObject).value.map(to => ImapMailAddress.fromMailParserAddressObject(to)))
+		if (mailParserHeadersMap.has("to")) {
+			imapMailEnvelope.setTo(
+				(mailParserHeadersMap.get("to") as MailParserAddressObject).value.map((to) => ImapMailAddress.fromMailParserAddressObject(to)),
+			)
 		}
 
-		if (mailParserHeadersMap.has('cc')) {
-			imapMailEnvelope.setCc((mailParserHeadersMap.get('cc') as MailParserAddressObject).value.map(cc => ImapMailAddress.fromMailParserAddressObject(cc)))
+		if (mailParserHeadersMap.has("cc")) {
+			imapMailEnvelope.setCc(
+				(mailParserHeadersMap.get("cc") as MailParserAddressObject).value.map((cc) => ImapMailAddress.fromMailParserAddressObject(cc)),
+			)
 		}
 
-		if (mailParserHeadersMap.has('bcc')) {
-			imapMailEnvelope.setBcc((mailParserHeadersMap.get('bcc') as MailParserAddressObject).value.map(bcc => ImapMailAddress.fromMailParserAddressObject(bcc)))
+		if (mailParserHeadersMap.has("bcc")) {
+			imapMailEnvelope.setBcc(
+				(mailParserHeadersMap.get("bcc") as MailParserAddressObject).value.map((bcc) => ImapMailAddress.fromMailParserAddressObject(bcc)),
+			)
 		}
 
-		if (mailParserHeadersMap.has('reply-to')) {
-			imapMailEnvelope.setReplyTo((mailParserHeadersMap.get('reply-to') as MailParserAddressObject).value.map(replyTo => ImapMailAddress.fromMailParserAddressObject(replyTo)))
+		if (mailParserHeadersMap.has("reply-to")) {
+			imapMailEnvelope.setReplyTo(
+				(mailParserHeadersMap.get("reply-to") as MailParserAddressObject).value.map((replyTo) => ImapMailAddress.fromMailParserAddressObject(replyTo)),
+			)
 		}
 
 		return imapMailEnvelope
@@ -233,7 +243,6 @@ export class ImapMail {
 		this.labels = labels
 		return this
 	}
-
 
 	setEnvelope(envelope: ImapMailEnvelope): this {
 		this.envelope = envelope

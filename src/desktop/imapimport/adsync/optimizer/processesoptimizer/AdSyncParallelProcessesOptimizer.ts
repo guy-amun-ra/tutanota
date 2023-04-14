@@ -5,7 +5,6 @@ import { AdSyncProcessesOptimizer, OptimizerProcess } from "./AdSyncProcessesOpt
 
 const OPTIMIZATION_INTERVAL = 5 // in seconds
 export class AdSyncParallelProcessesOptimizer extends AdSyncProcessesOptimizer {
-
 	private optimizerUpdateActionHistory: OptimizerUpdateAction[] = [OptimizerUpdateAction.NO_UPDATE]
 
 	override startAdSyncOptimizer(): void {
@@ -50,13 +49,15 @@ export class AdSyncParallelProcessesOptimizer extends AdSyncProcessesOptimizer {
 			return 0
 		} else {
 			let activeProcessCount = 0
-			return [...this.runningProcessMap.values()].reduce<AverageThroughput>((acc: AverageThroughput, value: OptimizerProcess) => {
-				if (value.syncSessionMailbox) {
-					acc += value.syncSessionMailbox.getAverageThroughputInTimeInterval(fromTimeStamp, toTimeStamp)
-					activeProcessCount += 1
-				}
-				return acc
-			}, 0) / (activeProcessCount != 0 ? activeProcessCount : 1)
+			return (
+				[...this.runningProcessMap.values()].reduce<AverageThroughput>((acc: AverageThroughput, value: OptimizerProcess) => {
+					if (value.syncSessionMailbox) {
+						acc += value.syncSessionMailbox.getAverageThroughputInTimeInterval(fromTimeStamp, toTimeStamp)
+						activeProcessCount += 1
+					}
+					return acc
+				}, 0) / (activeProcessCount != 0 ? activeProcessCount : 1)
+			)
 		}
 	}
 }

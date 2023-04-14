@@ -176,7 +176,7 @@ export class MailFacade {
 			ownerEncSessionKey: encryptKey(mailGroupKey, sk),
 			ownerGroup: ownerGroupId,
 		})
-		const createMailFolderReturn = await this.serviceExecutor.post(MailFolderService, newFolder, {sessionKey: sk})
+		const createMailFolderReturn = await this.serviceExecutor.post(MailFolderService, newFolder, { sessionKey: sk })
 		return this.entityClient.load(MailFolderTypeRef, createMailFolderReturn.newFolder)
 	}
 

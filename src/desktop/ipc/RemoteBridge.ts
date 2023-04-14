@@ -28,8 +28,7 @@ export type FacadeHandler = (message: Request<"facade">) => Promise<any>
 export type FacadeHandlerFactory = (window: ApplicationWindow) => FacadeHandler
 
 export class RemoteBridge {
-	constructor(private readonly dispatcherFactory: DispatcherFactory, private readonly facadeHandlerFactory: FacadeHandlerFactory) {
-	}
+	constructor(private readonly dispatcherFactory: DispatcherFactory, private readonly facadeHandlerFactory: FacadeHandlerFactory) {}
 
 	createBridge(window: ApplicationWindow): SendingFacades {
 		const webContents = window._browserWindow.webContents
@@ -54,7 +53,7 @@ export class RemoteBridge {
 			desktopFacade: new DesktopFacadeSendDispatcher(nativeInterface),
 			commonNativeFacade: new CommonNativeFacadeSendDispatcher(nativeInterface),
 			interWindowEventSender: new InterWindowEventFacadeSendDispatcher(nativeInterface),
-			imapImportFacade: new ImapImportFacadeSendDispatcher(nativeInterface)
+			imapImportFacade: new ImapImportFacadeSendDispatcher(nativeInterface),
 		}
 	}
 

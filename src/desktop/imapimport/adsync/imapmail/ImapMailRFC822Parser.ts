@@ -1,7 +1,7 @@
 import { ImapMailAttachment, ImapMailBody, ImapMailEnvelope } from "./ImapMail.js"
 import * as Stream from "stream"
 
-const MailParser = require('mailparser').MailParser;
+const MailParser = require("mailparser").MailParser
 
 export type MailParserAddress = {
 	name: string
@@ -33,16 +33,16 @@ export class ImapMailRFC822Parser {
 		return new Promise<ParsedImapRFC822>((resolve, reject) => {
 			let parsedImapRFC822: ParsedImapRFC822 = {}
 
-			this.parser.on('headers', (headersMap: Map<string, string | string[] | MailParserAddressObject | Date | object>) => {
+			this.parser.on("headers", (headersMap: Map<string, string | string[] | MailParserAddressObject | Date | object>) => {
 				parsedImapRFC822.parsedEnvelope = ImapMailEnvelope.fromMailParserHeadersMap(headersMap)
 			})
 
-			this.parser.on('data', async (data: any) => {
-				if (data.type === 'text') {
+			this.parser.on("data", async (data: any) => {
+				if (data.type === "text") {
 					parsedImapRFC822.parsedBody = new ImapMailBody(data.html, data.text, data.textAsHtml)
 				}
 
-				if (data.type == 'attachment') {
+				if (data.type == "attachment") {
 					if (parsedImapRFC822.parsedAttachments === undefined) {
 						parsedImapRFC822.parsedAttachments = []
 					}
@@ -62,7 +62,7 @@ export class ImapMailRFC822Parser {
 				}
 			})
 
-			this.parser.on('error', (err: Error) => reject(err))
+			this.parser.on("error", (err: Error) => reject(err))
 
 			this.parser.on("end", () => {
 				resolve(parsedImapRFC822)
@@ -75,9 +75,9 @@ export class ImapMailRFC822Parser {
 	private bufferFromStream(stream: Stream): Promise<Buffer> {
 		const chunks: Buffer[] = []
 		return new Promise((resolve, reject) => {
-			stream.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
-			stream.on('error', (err) => reject(err));
-			stream.on('end', () => resolve(Buffer.concat(chunks)));
+			stream.on("data", (chunk) => chunks.push(Buffer.from(chunk)))
+			stream.on("error", (err) => reject(err))
+			stream.on("end", () => resolve(Buffer.concat(chunks)))
 		})
 	}
 }

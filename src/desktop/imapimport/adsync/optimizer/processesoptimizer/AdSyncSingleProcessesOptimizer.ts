@@ -3,7 +3,6 @@ import { ImapSyncSessionMailbox } from "../../ImapSyncSessionMailbox.js"
 import { SyncSessionEventListener } from "../../ImapSyncSession.js"
 
 export class AdSyncSingleProcessesOptimizer extends AdSyncProcessesOptimizer {
-
 	constructor(mailboxes: ImapSyncSessionMailbox[], syncSessionEventListener: SyncSessionEventListener) {
 		super(mailboxes, 0, syncSessionEventListener) // setting optimizationDifference to zero (0)
 	}

@@ -20,7 +20,6 @@ export class OptimizerProcess {
 }
 
 export class AdSyncProcessesOptimizer extends AdSyncOptimizer implements AdSyncProcessesOptimizerEventListener {
-
 	protected scheduler?: NodeJS.Timer
 	private readonly optimizedSyncSessionMailboxes: ImapSyncSessionMailbox[]
 	private syncSessionEventListener: SyncSessionEventListener
@@ -42,8 +41,9 @@ export class AdSyncProcessesOptimizer extends AdSyncOptimizer implements AdSyncP
 	protected startSyncSessionProcesses(amount: number) {
 		let nextMailboxesToDownload = this.nextMailboxesToDownload(amount)
 
-		nextMailboxesToDownload.forEach(mailbox => {
-			if (!this.isExistRunningProcessForMailbox(mailbox)) { // we only allow one process per IMAP folder
+		nextMailboxesToDownload.forEach((mailbox) => {
+			if (!this.isExistRunningProcessForMailbox(mailbox)) {
+				// we only allow one process per IMAP folder
 				this.runningProcessMap.set(this.nextProcessId, new OptimizerProcess(mailbox.mailboxState.path))
 				this.syncSessionEventListener.onStartSyncSessionProcess(this.nextProcessId, mailbox)
 				this.nextProcessId += 1
@@ -54,15 +54,16 @@ export class AdSyncProcessesOptimizer extends AdSyncOptimizer implements AdSyncP
 	protected stopSyncSessionProcesses(amount: number) {
 		let nextProcessIdsToDrop = this.nextProcessIdsToDrop(amount)
 
-		nextProcessIdsToDrop.forEach(processId => {
+		nextProcessIdsToDrop.forEach((processId) => {
 			let mailboxToDrop = this.runningProcessMap.get(processId)
 			if (mailboxToDrop) {
-				let timeToLiveIntervalMS = 1000 * (mailboxToDrop.syncSessionMailbox?.timeToLiveInterval ? mailboxToDrop.syncSessionMailbox?.timeToLiveInterval : 0) // conversion to milliseconds
+				let timeToLiveIntervalMS =
+					1000 * (mailboxToDrop.syncSessionMailbox?.timeToLiveInterval ? mailboxToDrop.syncSessionMailbox?.timeToLiveInterval : 0) // conversion to milliseconds
 
 				// a process may run at least its timeToLiveInterval in seconds
 				if (mailboxToDrop.processStartTime + timeToLiveIntervalMS <= Date.now()) {
 					if (mailboxToDrop.syncSessionMailbox) {
-						let index = this.optimizedSyncSessionMailboxes.findIndex(mailbox => {
+						let index = this.optimizedSyncSessionMailboxes.findIndex((mailbox) => {
 							return mailbox.mailboxState.path == mailboxToDrop!.mailboxPath
 						})
 						this.optimizedSyncSessionMailboxes[index] = mailboxToDrop.syncSessionMailbox
@@ -74,12 +75,11 @@ export class AdSyncProcessesOptimizer extends AdSyncOptimizer implements AdSyncP
 		})
 	}
 
-
 	protected nextMailboxesToDownload(amount: number): ImapSyncSessionMailbox[] {
 		return this.optimizedSyncSessionMailboxes
-				   .filter(mailbox => !this.isExistRunningProcessForMailbox(mailbox)) // we only allow one process per IMAP folder
-				   .sort((a, b) => b.importance - a.importance)
-				   .slice(0, amount)
+			.filter((mailbox) => !this.isExistRunningProcessForMailbox(mailbox)) // we only allow one process per IMAP folder
+			.sort((a, b) => b.importance - a.importance)
+			.slice(0, amount)
 	}
 
 	protected nextProcessIdsToDrop(amount: number): number[] {
@@ -89,8 +89,14 @@ export class AdSyncProcessesOptimizer extends AdSyncOptimizer implements AdSyncP
 				return value.syncSessionMailbox !== undefined
 			})
 			.sort(([_processIdA, valueA], [_processIdB, valueB]) => {
-				let averageEfficiencyScoreA = valueB.syncSessionMailbox!.getAverageEfficiencyScoreInTimeInterval(currentInterval.fromTimeStamp, currentInterval.toTimeStamp)
-				let averageEfficiencyScoreB = valueB.syncSessionMailbox!.getAverageEfficiencyScoreInTimeInterval(currentInterval.fromTimeStamp, currentInterval.toTimeStamp)
+				let averageEfficiencyScoreA = valueB.syncSessionMailbox!.getAverageEfficiencyScoreInTimeInterval(
+					currentInterval.fromTimeStamp,
+					currentInterval.toTimeStamp,
+				)
+				let averageEfficiencyScoreB = valueB.syncSessionMailbox!.getAverageEfficiencyScoreInTimeInterval(
+					currentInterval.fromTimeStamp,
+					currentInterval.toTimeStamp,
+				)
 				return averageEfficiencyScoreB - averageEfficiencyScoreA
 			})
 			.map(([processId, _value]) => processId)
@@ -98,7 +104,7 @@ export class AdSyncProcessesOptimizer extends AdSyncOptimizer implements AdSyncP
 	}
 
 	protected isExistRunningProcessForMailbox(mailbox: ImapSyncSessionMailbox) {
-		return Array.from(this.runningProcessMap.values()).find(optimizerProcess => {
+		return Array.from(this.runningProcessMap.values()).find((optimizerProcess) => {
 			return optimizerProcess.mailboxPath == mailbox.mailboxState.path
 		})
 	}

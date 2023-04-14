@@ -18,7 +18,7 @@ export enum SyncSessionState {
 	RUNNING,
 	PAUSED,
 	POSTPONED,
-	FINISHED
+	FINISHED,
 }
 
 export interface SyncSessionEventListener {
@@ -91,7 +91,7 @@ export class ImapSyncSession implements SyncSessionEventListener {
 			throw new ProgrammingError("The ImapSyncState has not been set!")
 		}
 
-		let knownMailboxes = this.imapSyncState.mailboxStates.map(mailboxState => {
+		let knownMailboxes = this.imapSyncState.mailboxStates.map((mailboxState) => {
 			return new ImapSyncSessionMailbox(mailboxState)
 		})
 
@@ -106,7 +106,7 @@ export class ImapSyncSession implements SyncSessionEventListener {
 			auth: {
 				user: imapAccount.username,
 				pass: imapAccount.password,
-				accessToken: imapAccount.accessToken
+				accessToken: imapAccount.accessToken,
 			},
 			// @ts-ignore // TODO add type definitions
 			qresync: this.adSyncConfig.isEnableImapQresync,
@@ -116,7 +116,7 @@ export class ImapSyncSession implements SyncSessionEventListener {
 		let listTreeResponse = await imapClient.listTree()
 		await imapClient.logout()
 
-		let fetchedRootMailboxes = listTreeResponse.folders.map(listTreeResponse => {
+		let fetchedRootMailboxes = listTreeResponse.folders.map((listTreeResponse) => {
 			return ImapMailbox.fromImapFlowListTreeResponse(listTreeResponse, null)
 		})
 
@@ -125,12 +125,12 @@ export class ImapSyncSession implements SyncSessionEventListener {
 
 	private getSyncSessionMailboxes(knownMailboxes: ImapSyncSessionMailbox[], fetchedRootMailboxes: ImapMailbox[]): ImapSyncSessionMailbox[] {
 		let resultMailboxes: ImapSyncSessionMailbox[] = []
-		fetchedRootMailboxes.forEach(fetchedRootMailbox => {
+		fetchedRootMailboxes.forEach((fetchedRootMailbox) => {
 			resultMailboxes.push(...this.traverseImapMailboxes(knownMailboxes, fetchedRootMailbox))
 		})
 
-		knownMailboxes.map(knownMailbox => {
-			let index = resultMailboxes.findIndex(mailbox => {
+		knownMailboxes.map((knownMailbox) => {
+			let index = resultMailboxes.findIndex((mailbox) => {
 				return mailbox.mailboxState.path == knownMailbox.mailboxState.path
 			})
 
@@ -149,7 +149,7 @@ export class ImapSyncSession implements SyncSessionEventListener {
 	private traverseImapMailboxes(knownMailboxes: ImapSyncSessionMailbox[], imapMailbox: ImapMailbox): ImapSyncSessionMailbox[] {
 		let result = []
 
-		let syncSessionMailbox = knownMailboxes.find(value => value.mailboxState.path == imapMailbox.path)
+		let syncSessionMailbox = knownMailboxes.find((value) => value.mailboxState.path == imapMailbox.path)
 		if (syncSessionMailbox === undefined) {
 			this.adSyncEventListener.onMailbox(imapMailbox, AdSyncEventType.CREATE)
 			syncSessionMailbox = new ImapSyncSessionMailbox(ImapMailboxState.fromImapMailbox(imapMailbox))
@@ -164,7 +164,7 @@ export class ImapSyncSession implements SyncSessionEventListener {
 			result.push(syncSessionMailbox)
 		}
 
-		imapMailbox.subFolders?.forEach(imapMailbox => {
+		imapMailbox.subFolders?.forEach((imapMailbox) => {
 			result.push(...this.traverseImapMailboxes(knownMailboxes, imapMailbox))
 		})
 		return result
@@ -182,12 +182,16 @@ export class ImapSyncSession implements SyncSessionEventListener {
 				throw new ProgrammingError("The ImapSyncState has not been set!")
 			}
 
-			let adSyncDownloadBlockSizeOptimizer = new AdSyncDownloadBlockSizeOptimizer(nextMailboxToDownload, this.adSyncConfig.downloadBlockSizeOptimizationDifference)
+			let adSyncDownloadBlockSizeOptimizer = new AdSyncDownloadBlockSizeOptimizer(
+				nextMailboxToDownload,
+				this.adSyncConfig.downloadBlockSizeOptimizationDifference,
+			)
 			let syncSessionProcess = new ImapSyncSessionProcess(processId, adSyncDownloadBlockSizeOptimizer, this.adSyncOptimizer, this.adSyncConfig)
 
 			this.runningSyncSessionProcesses.set(syncSessionProcess.processId, syncSessionProcess)
 			syncSessionProcess.startSyncSessionProcess(this.imapSyncState.imapAccount, this.adSyncEventListener).then((state) => {
-				if (state == SyncSessionProcessState.CONNECTION_FAILED) { // TODO we may have exceeded a rate limit on the number of parallel connections
+				if (state == SyncSessionProcessState.CONNECTION_FAILED) {
+					// TODO we may have exceeded a rate limit on the number of parallel connections
 					this.adSyncOptimizer?.forceStopSyncSessionProcess(processId)
 				} else {
 					if (this.adSyncConfig.isEnableDownloadBlockSizeOptimizer) {

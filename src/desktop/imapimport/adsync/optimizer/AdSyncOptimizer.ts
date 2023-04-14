@@ -8,13 +8,12 @@ export interface TimeStampInterval {
 export enum OptimizerUpdateAction {
 	NO_UPDATE,
 	INCREASE,
-	DECREASE
+	DECREASE,
 }
 
 export const THROUGHPUT_THRESHOLD: number = 10
 
 export abstract class AdSyncOptimizer {
-
 	protected optimizationDifference: number
 	protected abstract scheduler?: NodeJS.Timer
 	protected optimizerUpdateTimeStampHistory: TimeStamp[] = []

@@ -287,17 +287,17 @@ async function startupInstance(components: Components) {
 			await handleMailto(findMailToUrlInArgv(args), components)
 		}
 	})
-	   .on("open-url", (e, url) => {
-		   // MacOS mailto handling
-		   e.preventDefault()
+		.on("open-url", (e, url) => {
+			// MacOS mailto handling
+			e.preventDefault()
 
-		   if (url.startsWith("mailto:")) {
-			   app.whenReady().then(() => handleMailto(url, components))
-		   }
-	   })
-	   .on("will-quit", (e) => {
-		   dl.deleteTutanotaTempDirectory()
-	   })
+			if (url.startsWith("mailto:")) {
+				app.whenReady().then(() => handleMailto(url, components))
+			}
+		})
+		.on("will-quit", (e) => {
+			dl.deleteTutanotaTempDirectory()
+		})
 	await app.whenReady()
 	await onAppReady(components)
 }

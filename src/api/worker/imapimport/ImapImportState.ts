@@ -3,17 +3,14 @@ export enum ImportState {
 	RUNNING,
 	PAUSED,
 	POSTPONED,
-	FINISHED
+	FINISHED,
 }
 
 export class ImapImportState {
 	state: ImportState
 	postponedUntil: Date
 
-	constructor(
-		initialState: ImportState,
-		postponedUntil: Date = new Date(Date.now())
-	) {
+	constructor(initialState: ImportState, postponedUntil: Date = new Date(Date.now())) {
 		this.state = initialState
 		this.postponedUntil = postponedUntil
 	}

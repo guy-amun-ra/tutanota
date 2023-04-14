@@ -8,8 +8,8 @@ import { PartialRecipient, RecipientList } from "../../common/recipients/Recipie
 import { DataFile } from "../../common/DataFile.js"
 import { Attachments } from "../facades/lazy/MailFacade.js"
 
-const TEXT_CALENDAR_MIME_TYPE = "text/calendar";
-const CALENDAR_METHOD_MIME_PARAMETER = "method";
+const TEXT_CALENDAR_MIME_TYPE = "text/calendar"
+const CALENDAR_METHOD_MIME_PARAMETER = "method"
 
 const IMAP_FLAG_SEEN = "\\Seen"
 const IMAP_FLAG_ANSWERED = "\\Answered"
@@ -59,12 +59,12 @@ export function imapMailToImportMailParams(imapMail: ImapMail, folderSyncStateId
 		references: imapMail.envelope?.references ?? [],
 		imapUid: imapMail.uid,
 		imapModSeq: imapMail.modSeq ?? null,
-		imapFolderSyncState: folderSyncStateId
+		imapFolderSyncState: folderSyncStateId,
 	}
 }
 
 export function getFolderSyncStateForMailboxPath(mailboxPath: string, folderSyncStates: ImportImapFolderSyncState[]): ImportImapFolderSyncState | null {
-	let folderSyncState = folderSyncStates.find(folderSyncState => {
+	let folderSyncState = folderSyncStates.find((folderSyncState) => {
 		return folderSyncState.path == mailboxPath
 	})
 	return folderSyncState ? folderSyncState : null
@@ -75,10 +75,10 @@ function mailStateFromImapMailbox(imapMailbox: ImapMailbox): MailState {
 	switch (imapMailbox.specialUse) {
 		case ImapMailboxSpecialUse.SENT:
 			mailState = MailState.SENT
-			break;
+			break
 		case ImapMailboxSpecialUse.DRAFTS:
 			mailState = MailState.DRAFT
-			break;
+			break
 		default:
 			mailState = MailState.RECEIVED
 	}
@@ -90,9 +90,9 @@ function unreadFromImapMail(imapMail: ImapMail): boolean {
 }
 
 function mailMethodFromImapMail(imapMail: ImapMail): MailMethod {
-	let iCalAttachments = imapMail.attachments?.find((attachment => {
+	let iCalAttachments = imapMail.attachments?.find((attachment) => {
 		attachment.contentType == TEXT_CALENDAR_MIME_TYPE && attachment.headers.has(CALENDAR_METHOD_MIME_PARAMETER)
-	}))
+	})
 	let calendarMethod = iCalAttachments?.headers.get(CALENDAR_METHOD_MIME_PARAMETER) as CalendarMethod
 	return calendarMethod ? calendarMethodToMailMethod(calendarMethod) : MailMethod.NONE
 }
@@ -117,7 +117,7 @@ function replyTypeFromImapMail(imapMail: ImapMail): ReplyType {
 }
 
 function recipientsFromImapMailAddresses(imapMailAddresses: ImapMailAddress[]): RecipientList {
-	return imapMailAddresses.map(imapMailAddress => {
+	return imapMailAddresses.map((imapMailAddress) => {
 		let partialRecipient: PartialRecipient = {
 			address: imapMailAddress.address ?? "",
 			name: imapMailAddress.name,
@@ -127,14 +127,14 @@ function recipientsFromImapMailAddresses(imapMailAddresses: ImapMailAddress[]): 
 }
 
 function attachmentsFromImapMailAttachments(imapMailAttachments: ImapMailAttachment[]): Attachments {
-	return imapMailAttachments.map(imapMailAttachment => {
+	return imapMailAttachments.map((imapMailAttachment) => {
 		let dataFile: DataFile = {
 			_type: "DataFile",
 			name: imapMailAttachment.filename ?? "",
 			data: imapMailAttachment.content,
 			size: imapMailAttachment.size,
 			mimeType: imapMailAttachment.contentType,
-			cid: imapMailAttachment.cid
+			cid: imapMailAttachment.cid,
 		}
 		return dataFile
 	})

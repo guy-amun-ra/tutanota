@@ -19,7 +19,6 @@ export interface AdSyncConfig {
 }
 
 export class ImapAdSync {
-
 	private syncSession: ImapSyncSession
 
 	constructor(adSyncEventListener: AdSyncEventListener, adSyncConfig: AdSyncConfig = defaultAdSyncConfig) {

@@ -18,7 +18,9 @@ export class ImapImportStartedPage implements WizardPageN<AddImapImportData> {
 	view(vnode: Vnode<WizardPageAttrs<AddImapImportData>>): Children {
 		return m("", [
 			m("h4.mt-l.text-center", lang.get("imapImportStarted_title")),
-			m("p.text-center", lang.get("imapImportStartedSuccess_msg", {
+			m(
+				"p.text-center",
+				lang.get("imapImportStartedSuccess_msg", {
 					"{externalImapAccountUsername}": vnode.attrs.data.model.imapAccountUsername(),
 					"{rootImportMailFolderName}": vnode.attrs.data.model.rootImportMailFolderName(),
 				}),

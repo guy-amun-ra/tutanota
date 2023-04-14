@@ -10,7 +10,7 @@ import {
 	createImportMailPostIn,
 	ImportMailDataMailReference,
 	Mail,
-	MailTypeRef
+	MailTypeRef,
 } from "../../../entities/tutanota/TypeRefs.js"
 import { byteLength } from "@tutao/tutanota-utils"
 import { UNCOMPRESSED_MAX_SIZE } from "../../Compression.js"
@@ -49,42 +49,38 @@ export interface ImportMailParams {
  * The facade communicates directly with the ImportMailService.
  */
 export class ImportMailFacade {
-
 	constructor(
 		private readonly userFacade: UserFacade,
 		private readonly mailFacade: MailFacade,
 		private readonly serviceExecutor: IServiceExecutor,
 		private readonly entityClient: EntityClient,
-	) {
-	}
+	) {}
 
-	async importMail(
-		{
-			subject,
-			bodyText,
-			sentDate,
-			receivedDate,
-			state,
-			unread,
-			messageId,
-			inReplyTo,
-			references,
-			senderMailAddress,
-			senderName,
-			method,
-			replyType,
-			differentEnvelopeSender,
-			headers,
-			replyTos,
-			toRecipients,
-			ccRecipients,
-			bccRecipients,
-			attachments,
-			imapUid,
-			imapModSeq,
-			imapFolderSyncState,
-		}: ImportMailParams
-	): Promise<Mail> {
+	async importMail({
+		subject,
+		bodyText,
+		sentDate,
+		receivedDate,
+		state,
+		unread,
+		messageId,
+		inReplyTo,
+		references,
+		senderMailAddress,
+		senderName,
+		method,
+		replyType,
+		differentEnvelopeSender,
+		headers,
+		replyTos,
+		toRecipients,
+		ccRecipients,
+		bccRecipients,
+		attachments,
+		imapUid,
+		imapModSeq,
+		imapFolderSyncState,
+	}: ImportMailParams): Promise<Mail> {
 		if (byteLength(bodyText) > UNCOMPRESSED_MAX_SIZE) {
 			throw new MailBodyTooLargeError(`Can not import mail, mail body too large (${byteLength(bodyText)})`)
 		}
@@ -121,7 +117,7 @@ export class ImportMailFacade {
 			toRecipients: toRecipients.map(recipientToDraftRecipient),
 			ccRecipients: ccRecipients.map(recipientToDraftRecipient),
 			bccRecipients: bccRecipients.map(recipientToDraftRecipient),
-			addedAttachments: await this.mailFacade._createAddedAttachments(attachments, [], mailGroupId, mailGroupKey)
+			addedAttachments: await this.mailFacade._createAddedAttachments(attachments, [], mailGroupId, mailGroupKey),
 		})
 
 		const importMailPostOut = await this.serviceExecutor.post(ImportMailService, service, { sessionKey: sk })
@@ -131,6 +127,6 @@ export class ImportMailFacade {
 
 export function referenceToImportMailDataMailReference(reference: string): ImportMailDataMailReference {
 	return createImportMailDataMailReference({
-		reference: reference
+		reference: reference,
 	})
 }

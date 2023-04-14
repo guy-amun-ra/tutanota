@@ -146,7 +146,6 @@ export class ImapImportModel {
 
 /** Shows a wizard for adding an IMAP import. */
 export function showAddImapImportWizard(addImapImportData: AddImapImportData): Promise<void> {
-
 	const wizardPages = [
 		wizardPageWrapper(EnterImapCredentialsPage, new EnterImapCredentialsPageAttrs(addImapImportData)),
 		wizardPageWrapper(ConfigureImapImportPage, new ConfigureImapImportPageAttrs(addImapImportData)),

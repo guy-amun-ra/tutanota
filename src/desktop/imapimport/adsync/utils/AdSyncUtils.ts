@@ -12,5 +12,9 @@ export function getAverageOfList(list: number[]) {
 	return list.reduce<number>((acc, value) => {
 		acc += value
 		return acc
-	}, 0) / list.length != 0 ? list.length : 1
+	}, 0) /
+		list.length !=
+		0
+		? list.length
+		: 1
 }

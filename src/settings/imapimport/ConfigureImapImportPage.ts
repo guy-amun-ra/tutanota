@@ -104,9 +104,8 @@ export class ConfigureImapImportPageAttrs implements WizardPageAttrs<AddImapImpo
 }
 
 async function initializeAndContinueImapImport(initializeImportParams: InitializeImapImportParams): Promise<ImapImportState> {
-	return showProgressDialog("startingImapImport_msg",
-		locator.imapImporterFacade.initializeImport(initializeImportParams).then(() =>
-			locator.imapImporterFacade.continueImport()
-		)
+	return showProgressDialog(
+		"startingImapImport_msg",
+		locator.imapImporterFacade.initializeImport(initializeImportParams).then(() => locator.imapImporterFacade.continueImport()),
 	)
 }

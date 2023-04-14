@@ -336,29 +336,15 @@ export async function initLocator(worker: WorkerImpl, browserData: BrowserData) 
 	// IMAP mail import
 	locator.importImap = lazyMemoized(async () => {
 		const { ImportImapFacade } = await import("./facades/lazy/ImportImapFacade.js")
-		return new ImportImapFacade(
-			locator.user,
-			await locator.mail(),
-			locator.serviceExecutor,
-			locator.cachingEntityClient,
-		)
+		return new ImportImapFacade(locator.user, await locator.mail(), locator.serviceExecutor, locator.cachingEntityClient)
 	})
 	locator.importMail = lazyMemoized(async () => {
 		const { ImportMailFacade } = await import("./facades/lazy/ImportMailFacade.js")
-		return new ImportMailFacade(
-			locator.user,
-			await locator.mail(),
-			locator.serviceExecutor,
-			locator.cachingEntityClient,
-		)
+		return new ImportMailFacade(locator.user, await locator.mail(), locator.serviceExecutor, locator.cachingEntityClient)
 	})
 	locator.imapImporter = lazyMemoized(async () => {
 		const { ImapImporter } = await import("./imapimport/ImapImporter.js")
-		return new ImapImporter(
-			new ImapImportSystemFacadeSendDispatcher(locator.native),
-			await locator.importImap(),
-			await locator.importMail(),
-		)
+		return new ImapImporter(new ImapImportSystemFacadeSendDispatcher(locator.native), await locator.importImap(), await locator.importMail())
 	})
 
 	locator.mailAddress = lazyMemoized(async () => {

@@ -48,7 +48,7 @@ export class EnterImapCredentialsPage implements WizardPageN<AddImapImportData> 
 				} else {
 					return lang.get("imapAccountPort_helpLabel")
 				}
-			}
+			},
 		}
 		const imapAccountUsernameAttrs: TextFieldAttrs = {
 			label: "imapAccountUsername_label",
@@ -60,7 +60,7 @@ export class EnterImapCredentialsPage implements WizardPageN<AddImapImportData> 
 			value: vnode.attrs.data.model.imapAccountPassword(),
 			oninput: vnode.attrs.data.model.imapAccountPassword,
 			type: vnode.attrs.data.model.isImapAccountPasswordRevealed() ? TextFieldType.Text : TextFieldType.Password,
-			injectionsRight: () => this.renderRevealIcon(vnode.attrs.data.model)
+			injectionsRight: () => this.renderRevealIcon(vnode.attrs.data.model),
 		}
 
 		return m("", [

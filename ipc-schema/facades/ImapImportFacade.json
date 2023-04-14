@@ -1,73 +1,69 @@
 {
-	"name" : "ImapImportFacade",
-	"type" : "facade",
-	"senders" : [
-		"desktop"
-	],
-	"receivers" : [
-		"web"
-	],
-	"doc" : "Facade implemented by the web worker, receiving IMAP import events.",
-	"methods" : {
-		"onMailbox" : {
-			"doc" : "onMailbox IMAP import event.",
-			"arg" : [
+	"name": "ImapImportFacade",
+	"type": "facade",
+	"senders": ["desktop"],
+	"receivers": ["web"],
+	"doc": "Facade implemented by the web worker, receiving IMAP import events.",
+	"methods": {
+		"onMailbox": {
+			"doc": "onMailbox IMAP import event.",
+			"arg": [
 				{
-					"imapMailbox" : "ImapMailbox"
+					"imapMailbox": "ImapMailbox"
 				},
 				{
-					"eventType" : "AdSyncEventType"
+					"eventType": "AdSyncEventType"
 				}
 			],
-			"ret" : "void"
+			"ret": "void"
 		},
-		"onMailboxStatus" : {
-			"doc" : "onMailboxStatus IMAP import event.",
-			"arg" : [
+		"onMailboxStatus": {
+			"doc": "onMailboxStatus IMAP import event.",
+			"arg": [
 				{
-					"imapMailboxStatus" : "ImapMailboxStatus"
+					"imapMailboxStatus": "ImapMailboxStatus"
 				}
 			],
-			"ret" : "void"
+			"ret": "void"
 		},
-		"onMail" : {
-			"doc" : "onMail IMAP import event.",
-			"arg" : [
+		"onMail": {
+			"doc": "onMail IMAP import event.",
+			"arg": [
 				{
-					"imapMail" : "ImapMail"
+					"imapMail": "ImapMail"
 				},
 				{
-					"eventType" : "AdSyncEventType"
+					"eventType": "AdSyncEventType"
 				}
 			],
-			"ret" : "void"
+			"ret": "void"
 		},
-		"onPostpone" : {
-			"doc" : "onPostpone IMAP import event.",
-			"arg" : [
+		"onPostpone": {
+			"doc": "onPostpone IMAP import event.",
+			"arg": [
 				{
-					"postponedUntil" : "Date"
+					"postponedUntil": "Date"
 				}
 			],
-			"ret" : "void"
+			"ret": "void"
 		},
-		"onFinish" : {
-			"doc" : "onFinish IMAP import event.",
-			"arg" : [
+		"onFinish": {
+			"doc": "onFinish IMAP import event.",
+			"arg": [
 				{
-					"downloadedQuota" : "number"
+					"downloadedQuota": "number"
 				}
 			],
-			"ret" : "void"
+			"ret": "void"
 		},
-		"onError" : {
-			"doc" : "onError IMAP import event.",
-			"arg" : [
+		"onError": {
+			"doc": "onError IMAP import event.",
+			"arg": [
 				{
-					"imapError" : "ImapError"
+					"imapError": "ImapError"
 				}
 			],
-			"ret" : "void"
+			"ret": "void"
 		}
 	}
 }

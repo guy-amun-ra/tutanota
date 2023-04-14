@@ -1,7 +1,7 @@
 {
-	"name" : "ImapSyncState",
-	"type" : "typeref",
-	"location" : {
-		"typescript" : "../src/desktop/imapimport/adsync/ImapSyncState.js"
+	"name": "ImapSyncState",
+	"type": "typeref",
+	"location": {
+		"typescript": "../src/desktop/imapimport/adsync/ImapSyncState.js"
 	}
 }
