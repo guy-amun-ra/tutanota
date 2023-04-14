@@ -492,7 +492,6 @@ class MainLocator {
 				new WebDesktopFacade(),
 				imapImporterFacade,
 				new WebInterWindowEventFacade(this.logins, windowFacade),
-				new WebInterWindowEventFacade(logins, windowFacade),
 				new WebCommonNativeFacade(),
 				cryptoFacade,
 				calendarFacade,
