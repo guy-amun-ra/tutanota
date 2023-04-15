@@ -45,10 +45,12 @@ export class ImapSyncState {
 	imapAccount: ImapAccount
 	maxQuota: number
 	mailboxStates: ImapMailboxState[]
+	importedAttachmentHashes: string[]
 
-	constructor(imapAccount: ImapAccount, maxQuata: number, mailboxStates: ImapMailboxState[]) {
+	constructor(imapAccount: ImapAccount, maxQuata: number, mailboxStates: ImapMailboxState[], importedAttachmentHashes) {
 		this.imapAccount = imapAccount
 		this.maxQuota = maxQuata
 		this.mailboxStates = mailboxStates
+		this.importedAttachmentHashes = importedAttachmentHashes
 	}
 }

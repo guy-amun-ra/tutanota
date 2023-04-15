@@ -157,11 +157,14 @@ export class ImapMailEnvelope {
 	}
 }
 
-export class ImapMailAttachment {
+export type ImapMailAttachment = ImapMailFileAttachment | ImapMailReferenceAttachment
+
+export class ImapMailFileAttachment {
 	size: number
 	headers: Map<string, string>
 	contentType: string
 	content: Buffer
+	contentHash?: String
 	filename?: string
 	cid?: string
 	checksum: string
@@ -184,6 +187,22 @@ export class ImapMailAttachment {
 	setCid(cid: string): this {
 		this.cid = cid
 		return this
+	}
+
+	setContentHash(contentHash: string): this {
+		this.contentHash = contentHash
+		return this
+	}
+}
+
+//TODO perform deduplication
+//TODO should we transfer the externalAttachmentId or map the hash to the externalAttachmentId in the web worker4
+//TODO probably method 1
+export class ImapMailReferenceAttachment {
+	externalAttachmentId: any
+
+	constructor(externalAttachmentId: any) {
+		this.externalAttachmentId = externalAttachmentId
 	}
 }
 

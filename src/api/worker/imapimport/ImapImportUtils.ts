@@ -54,7 +54,7 @@ export function imapMailToImportMailParams(imapMail: ImapMail, folderSyncStateId
 		toRecipients: imapMail.envelope?.to ? recipientsFromImapMailAddresses(imapMail.envelope?.to) : [],
 		ccRecipients: imapMail.envelope?.cc ? recipientsFromImapMailAddresses(imapMail.envelope?.cc) : [],
 		bccRecipients: imapMail.envelope?.bcc ? recipientsFromImapMailAddresses(imapMail.envelope?.bcc) : [],
-		attachments: imapMail.attachments ? attachmentsFromImapMailAttachments(imapMail.attachments) : [],
+		attachments: imapMail.attachments ? attachmentsFromImapMailAttachments(imapMail.attachments) : null,
 		inReplyTo: imapMail.envelope?.inReplyTo ?? null,
 		references: imapMail.envelope?.references ?? [],
 		imapUid: imapMail.uid,
@@ -130,7 +130,7 @@ function attachmentsFromImapMailAttachments(imapMailAttachments: ImapMailAttachm
 	return imapMailAttachments.map((imapMailAttachment) => {
 		let dataFile: DataFile = {
 			_type: "DataFile",
-			name: imapMailAttachment.filename ?? "",
+			name: imapMailAttachment.filename ?? "filename",
 			data: imapMailAttachment.content,
 			size: imapMailAttachment.size,
 			mimeType: imapMailAttachment.contentType,

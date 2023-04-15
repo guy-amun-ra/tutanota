@@ -1,4 +1,4 @@
-import { ImapMailAttachment, ImapMailBody, ImapMailEnvelope } from "./ImapMail.js"
+import { ImapMailAttachment, ImapMailBody, ImapMailEnvelope, ImapMailFileAttachment } from "./ImapMail.js"
 import * as Stream from "stream"
 
 const MailParser = require("mailparser").MailParser
@@ -42,22 +42,29 @@ export class ImapMailRFC822Parser {
 					parsedImapRFC822.parsedBody = new ImapMailBody(data.html, data.text, data.textAsHtml)
 				}
 
-				if (data.type == "attachment") {
-					if (parsedImapRFC822.parsedAttachments === undefined) {
-						parsedImapRFC822.parsedAttachments = []
-					}
+				if (data.type === "attachment") {
 					let content = await this.bufferFromStream(data.content)
-					let imapMailAttachment = new ImapMailAttachment(data.size, data.headers, data.contentType, content, data.checksum, data.related)
 
-					if (data.filename) {
-						imapMailAttachment.setFilename(data.filename)
+					if (content.length > 0) {
+						if (parsedImapRFC822.parsedAttachments === undefined) {
+							parsedImapRFC822.parsedAttachments = []
+						}
+
+						// TODO perform deduplication
+
+
+						let imapMailAttachment = new ImapMailFileAttachment(data.size, data.headers, data.contentType, content, data.checksum, data.related)
+
+						if (data.filename) {
+							imapMailAttachment.setFilename(data.filename)
+						}
+
+						if (data.cid) {
+							imapMailAttachment.setCid(data.cid)
+						}
+
+						parsedImapRFC822.parsedAttachments?.push(imapMailAttachment)
 					}
-
-					if (data.cid) {
-						imapMailAttachment.setCid(data.cid)
-					}
-
-					parsedImapRFC822.parsedAttachments?.push(imapMailAttachment)
 					data.release()
 				}
 			})

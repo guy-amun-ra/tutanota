@@ -34,6 +34,7 @@ export class DesktopImapImportSystemFacade implements ImapImportSystemFacade, Ad
 	}
 
 	onMail(mail: ImapMail, eventType: AdSyncEventType): void {
+		// TODO upload Attachment
 		this.win.imapImportFacade.onMail(mail, eventType)
 	}
 
