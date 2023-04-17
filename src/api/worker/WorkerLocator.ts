@@ -57,6 +57,7 @@ import { BlobAccessTokenFacade } from "./facades/BlobAccessTokenFacade.js"
 import { OwnerEncSessionKeysUpdateQueue } from "./crypto/OwnerEncSessionKeysUpdateQueue.js"
 import { EventBusEventCoordinator } from "./EventBusEventCoordinator.js"
 import { WorkerFacade } from "./facades/WorkerFacade.js"
+import { SqlCipherFacade } from "../../native/common/generatedipc/SqlCipherFacade.js"
 import type { SearchFacade } from "./search/SearchFacade.js"
 import { Challenge } from "../entities/sys/TypeRefs.js"
 import { LoginFailReason } from "../main/PageContextLoginListener.js"
@@ -110,6 +111,7 @@ export type WorkerLocatorType = {
 	deviceEncryptionFacade: DeviceEncryptionFacade
 	native: NativeInterface
 	workerFacade: WorkerFacade
+	sqlCipherFacade: SqlCipherFacade
 
 	// used to cache between resets
 	_browserData: BrowserData
@@ -139,17 +141,19 @@ export async function initLocator(worker: WorkerImpl, browserData: BrowserData) 
 		return new BookingFacade(locator.serviceExecutor)
 	})
 
-	const offlineStorageProvider = async () => {
-		if (isOfflineStorageAvailable() && !isAdminClient()) {
+	let offlineStorageProvider
+	if (isOfflineStorageAvailable() && !isAdminClient()) {
+		locator.sqlCipherFacade = new SqlCipherFacadeSendDispatcher(locator.native)
+		offlineStorageProvider = async () => {
 			return new OfflineStorage(
-				new SqlCipherFacadeSendDispatcher(locator.native),
+				locator.sqlCipherFacade,
 				new InterWindowEventFacadeSendDispatcher(worker),
 				dateProvider,
 				new OfflineStorageMigrator(OFFLINE_STORAGE_MIGRATIONS, modelInfos),
 			)
-		} else {
-			return null
 		}
+	} else {
+		offlineStorageProvider = async () => null
 	}
 
 	const maybeUninitializedStorage = new LateInitializedCacheStorageImpl(worker, offlineStorageProvider)

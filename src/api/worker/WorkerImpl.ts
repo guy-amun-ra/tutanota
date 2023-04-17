@@ -41,6 +41,7 @@ import { ExposedEventController } from "../main/EventController.js"
 import { ExposedOperationProgressTracker } from "../main/OperationProgressTracker.js"
 import { WorkerFacade } from "./facades/WorkerFacade.js"
 import { InfoMessageHandler } from "../../gui/InfoMessageHandler.js"
+import { SqlCipherFacade } from "../../native/common/generatedipc/SqlCipherFacade.js"
 
 assertWorkerOrNode()
 
@@ -78,6 +79,7 @@ export interface WorkerInterface {
 	readonly serviceExecutor: IServiceExecutor
 	readonly cryptoFacade: CryptoFacade
 	readonly cacheStorage: ExposedCacheStorage
+	readonly sqlCipherFacade: SqlCipherFacade
 	readonly random: WorkerRandomizer
 	readonly eventBus: ExposedEventBus
 	readonly entropyFacade: EntropyFacade
@@ -231,6 +233,10 @@ export class WorkerImpl implements NativeInterface {
 
 			async cacheStorage() {
 				return locator.cacheStorage
+			},
+
+			async sqlCipherFacade() {
+				return locator.sqlCipherFacade
 			},
 
 			async random() {
