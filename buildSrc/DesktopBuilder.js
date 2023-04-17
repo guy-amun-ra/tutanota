@@ -113,7 +113,7 @@ export async function buildDesktop({ dirname, version, platform, updateUrl, name
 async function rollupDesktop(dirname, outDir, version, platform, disableMinify) {
 	platform = getCanonicalPlatformName(platform)
 	const mainBundle = await rollup({
-		input: path.join(dirname, "src/desktop/DesktopMain.ts"),
+		input: [path.join(dirname, "src/desktop/DesktopMain.ts"), path.join(dirname, "src/desktop/db/sqlworker.ts")],
 		// some transitive dep of a transitive dev-dep requires https://www.npmjs.com/package/url
 		// which rollup for some reason won't distinguish from the node builtin.
 		external: ["url", "util", "path", "fs", "os", "http", "https", "crypto", "child_process", "electron-updater"],

@@ -82,7 +82,7 @@ importScripts("./worker.js")
 async function buildDesktopPart({ version }) {
 	await runStep("Desktop: Esbuild", async () => {
 		await esbuild({
-			entryPoints: ["src/desktop/DesktopMain.ts"],
+			entryPoints: ["src/desktop/DesktopMain.ts", "src/desktop/db/sqlworker.ts"],
 			outdir: "./build/desktop",
 			// Why we bundle at the moment:
 			// - We need to include all the imports: we currently use some node_modules directly, without pre-bundling them like rest of libs we can't avoid it
