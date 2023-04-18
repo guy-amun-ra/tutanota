@@ -4306,6 +4306,59 @@ export const typeModels = {
         "app": "tutanota",
         "version": "62"
     },
+    "ImportAttachment": {
+        "name": "ImportAttachment",
+        "since": 62,
+        "type": "AGGREGATED_TYPE",
+        "id": 1383,
+        "rootId": "CHR1dGFub3RhAAVn",
+        "versioned": false,
+        "encrypted": false,
+        "values": {
+            "_id": {
+                "final": true,
+                "name": "_id",
+                "id": 1384,
+                "since": 62,
+                "type": "CustomId",
+                "cardinality": "One",
+                "encrypted": false
+            },
+            "ownerEncFileSessionKey": {
+                "final": true,
+                "name": "ownerEncFileSessionKey",
+                "id": 1385,
+                "since": 62,
+                "type": "Bytes",
+                "cardinality": "One",
+                "encrypted": false
+            }
+        },
+        "associations": {
+            "existingFile": {
+                "final": true,
+                "name": "existingFile",
+                "id": 1387,
+                "since": 62,
+                "type": "LIST_ELEMENT_ASSOCIATION",
+                "cardinality": "ZeroOrOne",
+                "refType": "File",
+                "dependency": null
+            },
+            "newFile": {
+                "final": true,
+                "name": "newFile",
+                "id": 1386,
+                "since": 62,
+                "type": "AGGREGATION",
+                "cardinality": "ZeroOrOne",
+                "refType": "NewImportAttachment",
+                "dependency": null
+            }
+        },
+        "app": "tutanota",
+        "version": "62"
+    },
     "ImportImapAccount": {
         "name": "ImportImapAccount",
         "since": 62,
@@ -4378,15 +4431,15 @@ export const typeModels = {
         "name": "ImportImapAccountSyncState",
         "since": 62,
         "type": "ELEMENT_TYPE",
-        "id": 1349,
-        "rootId": "CHR1dGFub3RhAAVF",
+        "id": 1358,
+        "rootId": "CHR1dGFub3RhAAVO",
         "versioned": false,
         "encrypted": true,
         "values": {
             "_format": {
                 "final": false,
                 "name": "_format",
-                "id": 1353,
+                "id": 1362,
                 "since": 62,
                 "type": "Number",
                 "cardinality": "One",
@@ -4395,7 +4448,7 @@ export const typeModels = {
             "_id": {
                 "final": true,
                 "name": "_id",
-                "id": 1351,
+                "id": 1360,
                 "since": 62,
                 "type": "GeneratedId",
                 "cardinality": "One",
@@ -4404,7 +4457,7 @@ export const typeModels = {
             "_ownerEncSessionKey": {
                 "final": true,
                 "name": "_ownerEncSessionKey",
-                "id": 1355,
+                "id": 1364,
                 "since": 62,
                 "type": "Bytes",
                 "cardinality": "ZeroOrOne",
@@ -4413,7 +4466,7 @@ export const typeModels = {
             "_ownerGroup": {
                 "final": true,
                 "name": "_ownerGroup",
-                "id": 1354,
+                "id": 1363,
                 "since": 62,
                 "type": "GeneratedId",
                 "cardinality": "ZeroOrOne",
@@ -4422,7 +4475,7 @@ export const typeModels = {
             "_permissions": {
                 "final": true,
                 "name": "_permissions",
-                "id": 1352,
+                "id": 1361,
                 "since": 62,
                 "type": "GeneratedId",
                 "cardinality": "One",
@@ -4431,7 +4484,7 @@ export const typeModels = {
             "importedMailCount": {
                 "final": false,
                 "name": "importedMailCount",
-                "id": 1358,
+                "id": 1367,
                 "since": 62,
                 "type": "Number",
                 "cardinality": "One",
@@ -4440,7 +4493,7 @@ export const typeModels = {
             "maxQuota": {
                 "final": false,
                 "name": "maxQuota",
-                "id": 1356,
+                "id": 1365,
                 "since": 62,
                 "type": "Number",
                 "cardinality": "One",
@@ -4449,7 +4502,7 @@ export const typeModels = {
             "postponedUntil": {
                 "final": false,
                 "name": "postponedUntil",
-                "id": 1357,
+                "id": 1366,
                 "since": 62,
                 "type": "Number",
                 "cardinality": "One",
@@ -4460,7 +4513,7 @@ export const typeModels = {
             "imapAccount": {
                 "final": true,
                 "name": "imapAccount",
-                "id": 1360,
+                "id": 1370,
                 "since": 62,
                 "type": "AGGREGATION",
                 "cardinality": "One",
@@ -4470,17 +4523,27 @@ export const typeModels = {
             "imapFolderSyncStateList": {
                 "final": true,
                 "name": "imapFolderSyncStateList",
-                "id": 1359,
+                "id": 1368,
                 "since": 62,
                 "type": "LIST_ASSOCIATION",
                 "cardinality": "One",
                 "refType": "ImportImapFolderSyncState",
                 "dependency": null
             },
+            "importedImapAttachmentHashToIdMap": {
+                "final": true,
+                "name": "importedImapAttachmentHashToIdMap",
+                "id": 1369,
+                "since": 62,
+                "type": "LIST_ASSOCIATION",
+                "cardinality": "One",
+                "refType": "ImportImapAttachmentHashToId",
+                "dependency": null
+            },
             "rootImportMailFolder": {
                 "final": true,
                 "name": "rootImportMailFolder",
-                "id": 1361,
+                "id": 1371,
                 "since": 62,
                 "type": "LIST_ELEMENT_ASSOCIATION",
                 "cardinality": "ZeroOrOne",
@@ -4491,208 +4554,8 @@ export const typeModels = {
         "app": "tutanota",
         "version": "62"
     },
-    "ImportImapDeleteIn": {
-        "name": "ImportImapDeleteIn",
-        "since": 62,
-        "type": "DATA_TRANSFER_TYPE",
-        "id": 1431,
-        "rootId": "CHR1dGFub3RhAAWX",
-        "versioned": false,
-        "encrypted": true,
-        "values": {
-            "_format": {
-                "final": false,
-                "name": "_format",
-                "id": 1432,
-                "since": 62,
-                "type": "Number",
-                "cardinality": "One",
-                "encrypted": false
-            }
-        },
-        "associations": {
-            "imapAccountSyncState": {
-                "final": false,
-                "name": "imapAccountSyncState",
-                "id": 1433,
-                "since": 62,
-                "type": "ELEMENT_ASSOCIATION",
-                "cardinality": "One",
-                "refType": "ImportImapAccountSyncState",
-                "dependency": null
-            }
-        },
-        "app": "tutanota",
-        "version": "62"
-    },
-    "ImportImapFolderDeleteIn": {
-        "name": "ImportImapFolderDeleteIn",
-        "since": 62,
-        "type": "DATA_TRANSFER_TYPE",
-        "id": 1416,
-        "rootId": "CHR1dGFub3RhAAWI",
-        "versioned": false,
-        "encrypted": false,
-        "values": {
-            "_format": {
-                "final": false,
-                "name": "_format",
-                "id": 1417,
-                "since": 62,
-                "type": "Number",
-                "cardinality": "One",
-                "encrypted": false
-            }
-        },
-        "associations": {
-            "imapFolderSyncState": {
-                "final": false,
-                "name": "imapFolderSyncState",
-                "id": 1418,
-                "since": 62,
-                "type": "LIST_ELEMENT_ASSOCIATION",
-                "cardinality": "One",
-                "refType": "ImportImapFolderSyncState",
-                "dependency": null
-            }
-        },
-        "app": "tutanota",
-        "version": "62"
-    },
-    "ImportImapFolderPostIn": {
-        "name": "ImportImapFolderPostIn",
-        "since": 62,
-        "type": "DATA_TRANSFER_TYPE",
-        "id": 1403,
-        "rootId": "CHR1dGFub3RhAAV7",
-        "versioned": false,
-        "encrypted": true,
-        "values": {
-            "_format": {
-                "final": false,
-                "name": "_format",
-                "id": 1404,
-                "since": 62,
-                "type": "Number",
-                "cardinality": "One",
-                "encrypted": false
-            },
-            "highestmodseq": {
-                "final": false,
-                "name": "highestmodseq",
-                "id": 1410,
-                "since": 62,
-                "type": "Number",
-                "cardinality": "One",
-                "encrypted": true
-            },
-            "ownerEncSessionKey": {
-                "final": true,
-                "name": "ownerEncSessionKey",
-                "id": 1405,
-                "since": 62,
-                "type": "Bytes",
-                "cardinality": "One",
-                "encrypted": false
-            },
-            "ownerGroup": {
-                "final": true,
-                "name": "ownerGroup",
-                "id": 1406,
-                "since": 62,
-                "type": "GeneratedId",
-                "cardinality": "One",
-                "encrypted": false
-            },
-            "path": {
-                "final": false,
-                "name": "path",
-                "id": 1407,
-                "since": 62,
-                "type": "String",
-                "cardinality": "One",
-                "encrypted": true
-            },
-            "uidnext": {
-                "final": false,
-                "name": "uidnext",
-                "id": 1409,
-                "since": 62,
-                "type": "Number",
-                "cardinality": "One",
-                "encrypted": true
-            },
-            "uidvalidity": {
-                "final": false,
-                "name": "uidvalidity",
-                "id": 1408,
-                "since": 62,
-                "type": "Number",
-                "cardinality": "One",
-                "encrypted": true
-            }
-        },
-        "associations": {
-            "imapAccountSyncState": {
-                "final": true,
-                "name": "imapAccountSyncState",
-                "id": 1411,
-                "since": 62,
-                "type": "ELEMENT_ASSOCIATION",
-                "cardinality": "One",
-                "refType": "ImportImapAccountSyncState",
-                "dependency": null
-            },
-            "mailFolder": {
-                "final": true,
-                "name": "mailFolder",
-                "id": 1412,
-                "since": 62,
-                "type": "LIST_ELEMENT_ASSOCIATION",
-                "cardinality": "One",
-                "refType": "MailFolder",
-                "dependency": null
-            }
-        },
-        "app": "tutanota",
-        "version": "62"
-    },
-    "ImportImapFolderPostOut": {
-        "name": "ImportImapFolderPostOut",
-        "since": 62,
-        "type": "DATA_TRANSFER_TYPE",
-        "id": 1413,
-        "rootId": "CHR1dGFub3RhAAWF",
-        "versioned": false,
-        "encrypted": false,
-        "values": {
-            "_format": {
-                "final": false,
-                "name": "_format",
-                "id": 1414,
-                "since": 62,
-                "type": "Number",
-                "cardinality": "One",
-                "encrypted": false
-            }
-        },
-        "associations": {
-            "imapFolderSyncState": {
-                "final": false,
-                "name": "imapFolderSyncState",
-                "id": 1415,
-                "since": 62,
-                "type": "LIST_ELEMENT_ASSOCIATION",
-                "cardinality": "One",
-                "refType": "ImportImapFolderSyncState",
-                "dependency": null
-            }
-        },
-        "app": "tutanota",
-        "version": "62"
-    },
-    "ImportImapFolderSyncState": {
-        "name": "ImportImapFolderSyncState",
+    "ImportImapAttachmentHashToId": {
+        "name": "ImportImapAttachmentHashToId",
         "since": 62,
         "type": "LIST_ELEMENT_TYPE",
         "id": 1336,
@@ -4745,19 +4608,148 @@ export const typeModels = {
                 "cardinality": "One",
                 "encrypted": false
             },
+            "imapAttachmentHash": {
+                "final": true,
+                "name": "imapAttachmentHash",
+                "id": 1343,
+                "since": 62,
+                "type": "String",
+                "cardinality": "One",
+                "encrypted": true
+            }
+        },
+        "associations": {
+            "attachment": {
+                "final": true,
+                "name": "attachment",
+                "id": 1344,
+                "since": 62,
+                "type": "LIST_ELEMENT_ASSOCIATION",
+                "cardinality": "One",
+                "refType": "File",
+                "dependency": null
+            }
+        },
+        "app": "tutanota",
+        "version": "62"
+    },
+    "ImportImapDeleteIn": {
+        "name": "ImportImapDeleteIn",
+        "since": 62,
+        "type": "DATA_TRANSFER_TYPE",
+        "id": 1453,
+        "rootId": "CHR1dGFub3RhAAWt",
+        "versioned": false,
+        "encrypted": true,
+        "values": {
+            "_format": {
+                "final": false,
+                "name": "_format",
+                "id": 1454,
+                "since": 62,
+                "type": "Number",
+                "cardinality": "One",
+                "encrypted": false
+            }
+        },
+        "associations": {
+            "imapAccountSyncState": {
+                "final": false,
+                "name": "imapAccountSyncState",
+                "id": 1455,
+                "since": 62,
+                "type": "ELEMENT_ASSOCIATION",
+                "cardinality": "One",
+                "refType": "ImportImapAccountSyncState",
+                "dependency": null
+            }
+        },
+        "app": "tutanota",
+        "version": "62"
+    },
+    "ImportImapFolderDeleteIn": {
+        "name": "ImportImapFolderDeleteIn",
+        "since": 62,
+        "type": "DATA_TRANSFER_TYPE",
+        "id": 1438,
+        "rootId": "CHR1dGFub3RhAAWe",
+        "versioned": false,
+        "encrypted": false,
+        "values": {
+            "_format": {
+                "final": false,
+                "name": "_format",
+                "id": 1439,
+                "since": 62,
+                "type": "Number",
+                "cardinality": "One",
+                "encrypted": false
+            }
+        },
+        "associations": {
+            "imapFolderSyncState": {
+                "final": false,
+                "name": "imapFolderSyncState",
+                "id": 1440,
+                "since": 62,
+                "type": "LIST_ELEMENT_ASSOCIATION",
+                "cardinality": "One",
+                "refType": "ImportImapFolderSyncState",
+                "dependency": null
+            }
+        },
+        "app": "tutanota",
+        "version": "62"
+    },
+    "ImportImapFolderPostIn": {
+        "name": "ImportImapFolderPostIn",
+        "since": 62,
+        "type": "DATA_TRANSFER_TYPE",
+        "id": 1425,
+        "rootId": "CHR1dGFub3RhAAWR",
+        "versioned": false,
+        "encrypted": true,
+        "values": {
+            "_format": {
+                "final": false,
+                "name": "_format",
+                "id": 1426,
+                "since": 62,
+                "type": "Number",
+                "cardinality": "One",
+                "encrypted": false
+            },
             "highestmodseq": {
                 "final": false,
                 "name": "highestmodseq",
-                "id": 1346,
+                "id": 1432,
                 "since": 62,
                 "type": "Number",
                 "cardinality": "One",
                 "encrypted": true
             },
+            "ownerEncSessionKey": {
+                "final": true,
+                "name": "ownerEncSessionKey",
+                "id": 1427,
+                "since": 62,
+                "type": "Bytes",
+                "cardinality": "One",
+                "encrypted": false
+            },
+            "ownerGroup": {
+                "final": true,
+                "name": "ownerGroup",
+                "id": 1428,
+                "since": 62,
+                "type": "GeneratedId",
+                "cardinality": "One",
+                "encrypted": false
+            },
             "path": {
                 "final": false,
                 "name": "path",
-                "id": 1343,
+                "id": 1429,
                 "since": 62,
                 "type": "String",
                 "cardinality": "One",
@@ -4766,7 +4758,7 @@ export const typeModels = {
             "uidnext": {
                 "final": false,
                 "name": "uidnext",
-                "id": 1345,
+                "id": 1431,
                 "since": 62,
                 "type": "Number",
                 "cardinality": "One",
@@ -4775,7 +4767,157 @@ export const typeModels = {
             "uidvalidity": {
                 "final": false,
                 "name": "uidvalidity",
-                "id": 1344,
+                "id": 1430,
+                "since": 62,
+                "type": "Number",
+                "cardinality": "One",
+                "encrypted": true
+            }
+        },
+        "associations": {
+            "imapAccountSyncState": {
+                "final": true,
+                "name": "imapAccountSyncState",
+                "id": 1433,
+                "since": 62,
+                "type": "ELEMENT_ASSOCIATION",
+                "cardinality": "One",
+                "refType": "ImportImapAccountSyncState",
+                "dependency": null
+            },
+            "mailFolder": {
+                "final": true,
+                "name": "mailFolder",
+                "id": 1434,
+                "since": 62,
+                "type": "LIST_ELEMENT_ASSOCIATION",
+                "cardinality": "One",
+                "refType": "MailFolder",
+                "dependency": null
+            }
+        },
+        "app": "tutanota",
+        "version": "62"
+    },
+    "ImportImapFolderPostOut": {
+        "name": "ImportImapFolderPostOut",
+        "since": 62,
+        "type": "DATA_TRANSFER_TYPE",
+        "id": 1435,
+        "rootId": "CHR1dGFub3RhAAWb",
+        "versioned": false,
+        "encrypted": false,
+        "values": {
+            "_format": {
+                "final": false,
+                "name": "_format",
+                "id": 1436,
+                "since": 62,
+                "type": "Number",
+                "cardinality": "One",
+                "encrypted": false
+            }
+        },
+        "associations": {
+            "imapFolderSyncState": {
+                "final": false,
+                "name": "imapFolderSyncState",
+                "id": 1437,
+                "since": 62,
+                "type": "LIST_ELEMENT_ASSOCIATION",
+                "cardinality": "One",
+                "refType": "ImportImapFolderSyncState",
+                "dependency": null
+            }
+        },
+        "app": "tutanota",
+        "version": "62"
+    },
+    "ImportImapFolderSyncState": {
+        "name": "ImportImapFolderSyncState",
+        "since": 62,
+        "type": "LIST_ELEMENT_TYPE",
+        "id": 1345,
+        "rootId": "CHR1dGFub3RhAAVB",
+        "versioned": false,
+        "encrypted": true,
+        "values": {
+            "_format": {
+                "final": false,
+                "name": "_format",
+                "id": 1349,
+                "since": 62,
+                "type": "Number",
+                "cardinality": "One",
+                "encrypted": false
+            },
+            "_id": {
+                "final": true,
+                "name": "_id",
+                "id": 1347,
+                "since": 62,
+                "type": "GeneratedId",
+                "cardinality": "One",
+                "encrypted": false
+            },
+            "_ownerEncSessionKey": {
+                "final": true,
+                "name": "_ownerEncSessionKey",
+                "id": 1351,
+                "since": 62,
+                "type": "Bytes",
+                "cardinality": "ZeroOrOne",
+                "encrypted": false
+            },
+            "_ownerGroup": {
+                "final": true,
+                "name": "_ownerGroup",
+                "id": 1350,
+                "since": 62,
+                "type": "GeneratedId",
+                "cardinality": "ZeroOrOne",
+                "encrypted": false
+            },
+            "_permissions": {
+                "final": true,
+                "name": "_permissions",
+                "id": 1348,
+                "since": 62,
+                "type": "GeneratedId",
+                "cardinality": "One",
+                "encrypted": false
+            },
+            "highestmodseq": {
+                "final": false,
+                "name": "highestmodseq",
+                "id": 1355,
+                "since": 62,
+                "type": "Number",
+                "cardinality": "One",
+                "encrypted": true
+            },
+            "path": {
+                "final": false,
+                "name": "path",
+                "id": 1352,
+                "since": 62,
+                "type": "String",
+                "cardinality": "One",
+                "encrypted": true
+            },
+            "uidnext": {
+                "final": false,
+                "name": "uidnext",
+                "id": 1354,
+                "since": 62,
+                "type": "Number",
+                "cardinality": "One",
+                "encrypted": true
+            },
+            "uidvalidity": {
+                "final": false,
+                "name": "uidvalidity",
+                "id": 1353,
                 "since": 62,
                 "type": "Number",
                 "cardinality": "One",
@@ -4786,7 +4928,7 @@ export const typeModels = {
             "importedImapUidToMailIdsMap": {
                 "final": true,
                 "name": "importedImapUidToMailIdsMap",
-                "id": 1347,
+                "id": 1356,
                 "since": 62,
                 "type": "LIST_ASSOCIATION",
                 "cardinality": "One",
@@ -4796,7 +4938,7 @@ export const typeModels = {
             "mailFolder": {
                 "final": true,
                 "name": "mailFolder",
-                "id": 1348,
+                "id": 1357,
                 "since": 62,
                 "type": "LIST_ELEMENT_ASSOCIATION",
                 "cardinality": "One",
@@ -4811,15 +4953,15 @@ export const typeModels = {
         "name": "ImportImapPostIn",
         "since": 62,
         "type": "DATA_TRANSFER_TYPE",
-        "id": 1420,
-        "rootId": "CHR1dGFub3RhAAWM",
+        "id": 1442,
+        "rootId": "CHR1dGFub3RhAAWi",
         "versioned": false,
         "encrypted": true,
         "values": {
             "_format": {
                 "final": false,
                 "name": "_format",
-                "id": 1421,
+                "id": 1443,
                 "since": 62,
                 "type": "Number",
                 "cardinality": "One",
@@ -4828,7 +4970,7 @@ export const typeModels = {
             "maxQuota": {
                 "final": false,
                 "name": "maxQuota",
-                "id": 1422,
+                "id": 1444,
                 "since": 62,
                 "type": "Number",
                 "cardinality": "One",
@@ -4837,7 +4979,7 @@ export const typeModels = {
             "ownerEncImapAccountSyncStateSessionKey": {
                 "final": true,
                 "name": "ownerEncImapAccountSyncStateSessionKey",
-                "id": 1425,
+                "id": 1447,
                 "since": 62,
                 "type": "Bytes",
                 "cardinality": "One",
@@ -4846,7 +4988,7 @@ export const typeModels = {
             "ownerGroup": {
                 "final": true,
                 "name": "ownerGroup",
-                "id": 1424,
+                "id": 1446,
                 "since": 62,
                 "type": "GeneratedId",
                 "cardinality": "One",
@@ -4855,7 +4997,7 @@ export const typeModels = {
             "postponedUntil": {
                 "final": false,
                 "name": "postponedUntil",
-                "id": 1423,
+                "id": 1445,
                 "since": 62,
                 "type": "Number",
                 "cardinality": "One",
@@ -4866,7 +5008,7 @@ export const typeModels = {
             "imapAccount": {
                 "final": true,
                 "name": "imapAccount",
-                "id": 1426,
+                "id": 1448,
                 "since": 62,
                 "type": "AGGREGATION",
                 "cardinality": "One",
@@ -4876,7 +5018,7 @@ export const typeModels = {
             "rootImportMailFolder": {
                 "final": true,
                 "name": "rootImportMailFolder",
-                "id": 1427,
+                "id": 1449,
                 "since": 62,
                 "type": "LIST_ELEMENT_ASSOCIATION",
                 "cardinality": "ZeroOrOne",
@@ -4891,15 +5033,15 @@ export const typeModels = {
         "name": "ImportImapPostOut",
         "since": 62,
         "type": "DATA_TRANSFER_TYPE",
-        "id": 1428,
-        "rootId": "CHR1dGFub3RhAAWU",
+        "id": 1450,
+        "rootId": "CHR1dGFub3RhAAWq",
         "versioned": false,
         "encrypted": false,
         "values": {
             "_format": {
                 "final": false,
                 "name": "_format",
-                "id": 1429,
+                "id": 1451,
                 "since": 62,
                 "type": "Number",
                 "cardinality": "One",
@@ -4910,7 +5052,7 @@ export const typeModels = {
             "imapAccountSyncState": {
                 "final": false,
                 "name": "imapAccountSyncState",
-                "id": 1430,
+                "id": 1452,
                 "since": 62,
                 "type": "ELEMENT_ASSOCIATION",
                 "cardinality": "One",
@@ -5004,15 +5146,15 @@ export const typeModels = {
         "name": "ImportMailData",
         "since": 62,
         "type": "AGGREGATED_TYPE",
-        "id": 1365,
-        "rootId": "CHR1dGFub3RhAAVV",
+        "id": 1388,
+        "rootId": "CHR1dGFub3RhAAVs",
         "versioned": false,
         "encrypted": false,
         "values": {
             "_id": {
                 "final": true,
                 "name": "_id",
-                "id": 1366,
+                "id": 1389,
                 "since": 62,
                 "type": "CustomId",
                 "cardinality": "One",
@@ -5021,7 +5163,7 @@ export const typeModels = {
             "bodyText": {
                 "final": true,
                 "name": "bodyText",
-                "id": 1368,
+                "id": 1391,
                 "since": 62,
                 "type": "String",
                 "cardinality": "One",
@@ -5030,7 +5172,7 @@ export const typeModels = {
             "compressedBodyText": {
                 "final": true,
                 "name": "compressedBodyText",
-                "id": 1369,
+                "id": 1392,
                 "since": 62,
                 "type": "CompressedString",
                 "cardinality": "ZeroOrOne",
@@ -5039,7 +5181,7 @@ export const typeModels = {
             "compressedHeaders": {
                 "final": true,
                 "name": "compressedHeaders",
-                "id": 1384,
+                "id": 1407,
                 "since": 62,
                 "type": "CompressedString",
                 "cardinality": "One",
@@ -5048,7 +5190,7 @@ export const typeModels = {
             "confidential": {
                 "final": true,
                 "name": "confidential",
-                "id": 1379,
+                "id": 1402,
                 "since": 62,
                 "type": "Boolean",
                 "cardinality": "One",
@@ -5057,7 +5199,7 @@ export const typeModels = {
             "differentEnvelopeSender": {
                 "final": true,
                 "name": "differentEnvelopeSender",
-                "id": 1382,
+                "id": 1405,
                 "since": 62,
                 "type": "String",
                 "cardinality": "ZeroOrOne",
@@ -5066,7 +5208,7 @@ export const typeModels = {
             "inReplyTo": {
                 "final": true,
                 "name": "inReplyTo",
-                "id": 1375,
+                "id": 1398,
                 "since": 62,
                 "type": "String",
                 "cardinality": "ZeroOrOne",
@@ -5075,7 +5217,7 @@ export const typeModels = {
             "messageId": {
                 "final": true,
                 "name": "messageId",
-                "id": 1374,
+                "id": 1397,
                 "since": 62,
                 "type": "String",
                 "cardinality": "ZeroOrOne",
@@ -5084,7 +5226,7 @@ export const typeModels = {
             "method": {
                 "final": true,
                 "name": "method",
-                "id": 1380,
+                "id": 1403,
                 "since": 62,
                 "type": "Number",
                 "cardinality": "One",
@@ -5093,7 +5235,7 @@ export const typeModels = {
             "phishingStatus": {
                 "final": false,
                 "name": "phishingStatus",
-                "id": 1383,
+                "id": 1406,
                 "since": 62,
                 "type": "Number",
                 "cardinality": "One",
@@ -5102,7 +5244,7 @@ export const typeModels = {
             "receivedDate": {
                 "final": true,
                 "name": "receivedDate",
-                "id": 1371,
+                "id": 1394,
                 "since": 62,
                 "type": "Date",
                 "cardinality": "One",
@@ -5111,7 +5253,7 @@ export const typeModels = {
             "replyType": {
                 "final": false,
                 "name": "replyType",
-                "id": 1381,
+                "id": 1404,
                 "since": 62,
                 "type": "Number",
                 "cardinality": "One",
@@ -5120,7 +5262,7 @@ export const typeModels = {
             "senderMailAddress": {
                 "final": true,
                 "name": "senderMailAddress",
-                "id": 1377,
+                "id": 1400,
                 "since": 62,
                 "type": "String",
                 "cardinality": "One",
@@ -5129,7 +5271,7 @@ export const typeModels = {
             "senderName": {
                 "final": true,
                 "name": "senderName",
-                "id": 1378,
+                "id": 1401,
                 "since": 62,
                 "type": "String",
                 "cardinality": "One",
@@ -5138,7 +5280,7 @@ export const typeModels = {
             "sentDate": {
                 "final": true,
                 "name": "sentDate",
-                "id": 1370,
+                "id": 1393,
                 "since": 62,
                 "type": "Date",
                 "cardinality": "One",
@@ -5147,7 +5289,7 @@ export const typeModels = {
             "state": {
                 "final": false,
                 "name": "state",
-                "id": 1372,
+                "id": 1395,
                 "since": 62,
                 "type": "Number",
                 "cardinality": "One",
@@ -5156,7 +5298,7 @@ export const typeModels = {
             "subject": {
                 "final": true,
                 "name": "subject",
-                "id": 1367,
+                "id": 1390,
                 "since": 62,
                 "type": "String",
                 "cardinality": "One",
@@ -5165,7 +5307,7 @@ export const typeModels = {
             "unread": {
                 "final": false,
                 "name": "unread",
-                "id": 1373,
+                "id": 1396,
                 "since": 62,
                 "type": "Boolean",
                 "cardinality": "One",
@@ -5173,20 +5315,10 @@ export const typeModels = {
             }
         },
         "associations": {
-            "addedAttachments": {
-                "final": true,
-                "name": "addedAttachments",
-                "id": 1389,
-                "since": 62,
-                "type": "AGGREGATION",
-                "cardinality": "Any",
-                "refType": "DraftAttachment",
-                "dependency": null
-            },
             "bccRecipients": {
                 "final": true,
                 "name": "bccRecipients",
-                "id": 1388,
+                "id": 1411,
                 "since": 62,
                 "type": "AGGREGATION",
                 "cardinality": "Any",
@@ -5196,37 +5328,37 @@ export const typeModels = {
             "ccRecipients": {
                 "final": true,
                 "name": "ccRecipients",
-                "id": 1387,
+                "id": 1410,
                 "since": 62,
                 "type": "AGGREGATION",
                 "cardinality": "Any",
                 "refType": "DraftRecipient",
                 "dependency": null
             },
+            "importedAttachments": {
+                "final": true,
+                "name": "importedAttachments",
+                "id": 1412,
+                "since": 62,
+                "type": "AGGREGATION",
+                "cardinality": "Any",
+                "refType": "ImportAttachment",
+                "dependency": null
+            },
             "references": {
                 "final": true,
                 "name": "references",
-                "id": 1376,
+                "id": 1399,
                 "since": 62,
                 "type": "AGGREGATION",
                 "cardinality": "Any",
                 "refType": "ImportMailDataMailReference",
                 "dependency": null
             },
-            "removedAttachments": {
-                "final": true,
-                "name": "removedAttachments",
-                "id": 1390,
-                "since": 62,
-                "type": "LIST_ELEMENT_ASSOCIATION",
-                "cardinality": "Any",
-                "refType": "File",
-                "dependency": null
-            },
             "replyTos": {
                 "final": false,
                 "name": "replyTos",
-                "id": 1385,
+                "id": 1408,
                 "since": 62,
                 "type": "AGGREGATION",
                 "cardinality": "Any",
@@ -5236,7 +5368,7 @@ export const typeModels = {
             "toRecipients": {
                 "final": true,
                 "name": "toRecipients",
-                "id": 1386,
+                "id": 1409,
                 "since": 62,
                 "type": "AGGREGATION",
                 "cardinality": "Any",
@@ -5251,15 +5383,15 @@ export const typeModels = {
         "name": "ImportMailDataMailReference",
         "since": 62,
         "type": "AGGREGATED_TYPE",
-        "id": 1362,
-        "rootId": "CHR1dGFub3RhAAVS",
+        "id": 1372,
+        "rootId": "CHR1dGFub3RhAAVc",
         "versioned": false,
         "encrypted": false,
         "values": {
             "_id": {
                 "final": true,
                 "name": "_id",
-                "id": 1363,
+                "id": 1373,
                 "since": 62,
                 "type": "CustomId",
                 "cardinality": "One",
@@ -5268,7 +5400,7 @@ export const typeModels = {
             "reference": {
                 "final": false,
                 "name": "reference",
-                "id": 1364,
+                "id": 1374,
                 "since": 62,
                 "type": "String",
                 "cardinality": "One",
@@ -5283,15 +5415,15 @@ export const typeModels = {
         "name": "ImportMailPostIn",
         "since": 62,
         "type": "DATA_TRANSFER_TYPE",
-        "id": 1391,
-        "rootId": "CHR1dGFub3RhAAVv",
+        "id": 1413,
+        "rootId": "CHR1dGFub3RhAAWF",
         "versioned": false,
         "encrypted": true,
         "values": {
             "_format": {
                 "final": false,
                 "name": "_format",
-                "id": 1392,
+                "id": 1414,
                 "since": 62,
                 "type": "Number",
                 "cardinality": "One",
@@ -5300,7 +5432,7 @@ export const typeModels = {
             "imapModSeq": {
                 "final": false,
                 "name": "imapModSeq",
-                "id": 1396,
+                "id": 1418,
                 "since": 62,
                 "type": "Number",
                 "cardinality": "ZeroOrOne",
@@ -5309,7 +5441,7 @@ export const typeModels = {
             "imapUid": {
                 "final": true,
                 "name": "imapUid",
-                "id": 1395,
+                "id": 1417,
                 "since": 62,
                 "type": "Number",
                 "cardinality": "One",
@@ -5318,7 +5450,7 @@ export const typeModels = {
             "ownerEncSessionKey": {
                 "final": true,
                 "name": "ownerEncSessionKey",
-                "id": 1394,
+                "id": 1416,
                 "since": 62,
                 "type": "Bytes",
                 "cardinality": "One",
@@ -5327,7 +5459,7 @@ export const typeModels = {
             "ownerGroup": {
                 "final": true,
                 "name": "ownerGroup",
-                "id": 1393,
+                "id": 1415,
                 "since": 62,
                 "type": "GeneratedId",
                 "cardinality": "One",
@@ -5338,7 +5470,7 @@ export const typeModels = {
             "imapFolderSyncState": {
                 "final": true,
                 "name": "imapFolderSyncState",
-                "id": 1397,
+                "id": 1419,
                 "since": 62,
                 "type": "LIST_ELEMENT_ASSOCIATION",
                 "cardinality": "One",
@@ -5348,7 +5480,7 @@ export const typeModels = {
             "mailData": {
                 "final": false,
                 "name": "mailData",
-                "id": 1398,
+                "id": 1420,
                 "since": 62,
                 "type": "AGGREGATION",
                 "cardinality": "One",
@@ -5363,15 +5495,15 @@ export const typeModels = {
         "name": "ImportMailPostOut",
         "since": 62,
         "type": "DATA_TRANSFER_TYPE",
-        "id": 1399,
-        "rootId": "CHR1dGFub3RhAAV3",
+        "id": 1421,
+        "rootId": "CHR1dGFub3RhAAWN",
         "versioned": false,
         "encrypted": false,
         "values": {
             "_format": {
                 "final": false,
                 "name": "_format",
-                "id": 1400,
+                "id": 1422,
                 "since": 62,
                 "type": "Number",
                 "cardinality": "One",
@@ -5382,7 +5514,7 @@ export const typeModels = {
             "mail": {
                 "final": false,
                 "name": "mail",
-                "id": 1401,
+                "id": 1423,
                 "since": 62,
                 "type": "LIST_ELEMENT_ASSOCIATION",
                 "cardinality": "One",
@@ -6978,7 +7110,7 @@ export const typeModels = {
             "imapAccountSyncState": {
                 "final": false,
                 "name": "imapAccountSyncState",
-                "id": 1435,
+                "id": 1457,
                 "since": 62,
                 "type": "ELEMENT_ASSOCIATION",
                 "cardinality": "ZeroOrOne",
@@ -7313,6 +7445,85 @@ export const typeModels = {
                 "name": "referenceTokens",
                 "id": 1226,
                 "since": 52,
+                "type": "AGGREGATION",
+                "cardinality": "Any",
+                "refType": "BlobReferenceTokenWrapper",
+                "dependency": "sys"
+            }
+        },
+        "app": "tutanota",
+        "version": "62"
+    },
+    "NewImportAttachment": {
+        "name": "NewImportAttachment",
+        "since": 62,
+        "type": "AGGREGATED_TYPE",
+        "id": 1375,
+        "rootId": "CHR1dGFub3RhAAVf",
+        "versioned": false,
+        "encrypted": false,
+        "values": {
+            "_id": {
+                "final": true,
+                "name": "_id",
+                "id": 1376,
+                "since": 62,
+                "type": "CustomId",
+                "cardinality": "One",
+                "encrypted": false
+            },
+            "encCid": {
+                "final": true,
+                "name": "encCid",
+                "id": 1381,
+                "since": 62,
+                "type": "Bytes",
+                "cardinality": "ZeroOrOne",
+                "encrypted": false
+            },
+            "encFileHash": {
+                "final": true,
+                "name": "encFileHash",
+                "id": 1378,
+                "since": 62,
+                "type": "Bytes",
+                "cardinality": "ZeroOrOne",
+                "encrypted": false
+            },
+            "encFileName": {
+                "final": true,
+                "name": "encFileName",
+                "id": 1379,
+                "since": 62,
+                "type": "Bytes",
+                "cardinality": "One",
+                "encrypted": false
+            },
+            "encMimeType": {
+                "final": true,
+                "name": "encMimeType",
+                "id": 1380,
+                "since": 62,
+                "type": "Bytes",
+                "cardinality": "One",
+                "encrypted": false
+            },
+            "ownerEncFileHashSessionKey": {
+                "final": true,
+                "name": "ownerEncFileHashSessionKey",
+                "id": 1377,
+                "since": 62,
+                "type": "Bytes",
+                "cardinality": "ZeroOrOne",
+                "encrypted": false
+            }
+        },
+        "associations": {
+            "referenceTokens": {
+                "final": true,
+                "name": "referenceTokens",
+                "id": 1382,
+                "since": 62,
                 "type": "AGGREGATION",
                 "cardinality": "Any",
                 "refType": "BlobReferenceTokenWrapper",

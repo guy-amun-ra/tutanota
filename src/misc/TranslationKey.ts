@@ -645,6 +645,7 @@ export type TranslationKeyType =
 	| "imapImportSetup_title"
 	| "imapImportStarted_title"
 	| "imapImportStartedExplanation_msg"
+	| "imapImportStartedNotify_msg"
 	| "imapImportStartedSuccess_msg"
 	| "imapImportStartedPostponed_msg"
 	| "imapImportStatusFinished_label"

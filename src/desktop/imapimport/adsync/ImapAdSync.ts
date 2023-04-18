@@ -8,6 +8,7 @@ const defaultAdSyncConfig: AdSyncConfig = {
 	parallelProcessesOptimizationDifference: 2,
 	downloadBlockSizeOptimizationDifference: 100,
 	isEnableImapQresync: true,
+	isEnableAttachmentDeduplication: true,
 }
 
 export interface AdSyncConfig {
@@ -16,6 +17,7 @@ export interface AdSyncConfig {
 	parallelProcessesOptimizationDifference: number
 	downloadBlockSizeOptimizationDifference: number
 	isEnableImapQresync: boolean
+	isEnableAttachmentDeduplication: boolean
 }
 
 export class ImapAdSync {

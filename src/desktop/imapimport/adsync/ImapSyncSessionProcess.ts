@@ -1,6 +1,6 @@
 import { ImapSyncSessionMailbox } from "./ImapSyncSessionMailbox.js"
 import { AdSyncEventListener, AdSyncEventType } from "./AdSyncEventListener.js"
-import { ImapAccount, ImapMailboxStateImportedIds } from "./ImapSyncState.js"
+import { ImapAccount, ImapMailIds } from "./ImapSyncState.js"
 import { ImapMail } from "./imapmail/ImapMail.js"
 // @ts-ignore // TODO define types
 import { AdSyncDownloadBlockSizeOptimizer } from "./optimizer/AdSyncDownloadBlockSizeOptimizer.js"
@@ -103,8 +103,8 @@ export class ImapSyncSessionProcess {
 			if (fetchUidRange) {
 				let fetchOptions = {}
 				if (isEnableImapQresync) {
-					let importedModSequences = [...this.adSyncOptimizer.optimizedSyncSessionMailbox.mailboxState.importedUidToIdsMap.values()].map((value) =>
-						value.modSeq ? value.modSeq : 0,
+					let importedModSequences = [...this.adSyncOptimizer.optimizedSyncSessionMailbox.mailboxState.importedUidToMailIdsMap.values()].map(
+						(value) => (value.modSeq ? value.modSeq : 0),
 					)
 					let highestModSeq = Math.max(...importedModSequences)
 					fetchOptions = {
@@ -144,14 +144,18 @@ export class ImapSyncSessionProcess {
 						let mailFetchEndTime = Date.now()
 						let mailFetchTime = mailFetchEndTime - mailFetchStartTime
 
-						//TODO Check why mail source is not always available
+						// TODO Check why mail source is not always available
 						if (mail.source) {
 							let mailSize = mail.source.length
 							let mailDownloadTime = mailFetchTime != 0 ? mailFetchTime : 1 // we approximate the mailFetchTime to minimum 1 millisecond
 							let currenThroughput = mailSize / mailDownloadTime
 							this.adSyncOptimizer.optimizedSyncSessionMailbox.reportCurrentThroughput(currenThroughput)
 
-							this.adSyncProcessesOptimizerEventListener.onDownloadUpdate(this.processId, this.adSyncOptimizer.optimizedSyncSessionMailbox, mailSize)
+							this.adSyncProcessesOptimizerEventListener.onDownloadUpdate(
+								this.processId,
+								this.adSyncOptimizer.optimizedSyncSessionMailbox,
+								mailSize,
+							)
 						} else {
 							adSyncEventListener.onError(new ImapError(mail))
 						}
@@ -163,13 +167,13 @@ export class ImapSyncSessionProcess {
 
 						// TODO What happens if only flags updated but IMAP server does not support QRESYNC?
 						// TODO Check if email is already downloaded before downloading the actual data
-						let isMailUpdate = this.adSyncOptimizer.optimizedSyncSessionMailbox.mailboxState.importedUidToIdsMap.has(imapMail.uid)
+						let isMailUpdate = this.adSyncOptimizer.optimizedSyncSessionMailbox.mailboxState.importedUidToMailIdsMap.has(imapMail.uid)
 						if (isMailUpdate) {
 							adSyncEventListener.onMail(imapMail, AdSyncEventType.UPDATE)
 						} else {
-							this.adSyncOptimizer.optimizedSyncSessionMailbox.mailboxState.importedUidToIdsMap.set(
+							this.adSyncOptimizer.optimizedSyncSessionMailbox.mailboxState.importedUidToMailIdsMap.set(
 								imapMail.uid,
-								new ImapMailboxStateImportedIds(imapMail.uid),
+								new ImapMailIds(imapMail.uid),
 							)
 							adSyncEventListener.onMail(imapMail, AdSyncEventType.CREATE)
 						}
@@ -188,7 +192,7 @@ export class ImapSyncSessionProcess {
 
 	private async initFetchUidRange(imapClient: typeof ImapFlow, isEnableImapQresync: boolean) {
 		let fetchUidRange = new FetchUidRange(imapClient, isEnableImapQresync ? null : this.adSyncOptimizer.optimizedSyncSessionMailbox.mailCount)
-		let lastFetchedUid = Math.max(...this.adSyncOptimizer.optimizedSyncSessionMailbox.mailboxState.importedUidToIdsMap.keys())
+		let lastFetchedUid = Math.max(...this.adSyncOptimizer.optimizedSyncSessionMailbox.mailboxState.importedUidToMailIdsMap.keys())
 		let isInitialSeqFetch = isNaN(lastFetchedUid) || lastFetchedUid < 0 // TODO is < 0 sufficient?
 
 		await fetchUidRange.initFetchUidRange(

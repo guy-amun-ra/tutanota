@@ -120,7 +120,7 @@ import { NativeFileApp } from "../../../../native/common/FileApp.js"
 import { isLegacyMail } from "../../../common/MailWrapper.js"
 
 assertWorkerOrNode()
-export type Attachments = ReadonlyArray<TutanotaFile | DataFile | FileReference>
+type Attachments = ReadonlyArray<TutanotaFile | DataFile | FileReference>
 
 interface CreateDraftParams {
 	subject: string
@@ -375,7 +375,7 @@ export class MailFacade {
 	/**
 	 * Uploads the given data files or sets the file if it is already existing files (e.g. forwarded files) and returns all DraftAttachments
 	 */
-	async _createAddedAttachments(
+	private async _createAddedAttachments(
 		providedFiles: Attachments | null,
 		existingFileIds: ReadonlyArray<IdTuple>,
 		senderMailGroupId: Id,
@@ -429,7 +429,7 @@ export class MailFacade {
 			})
 	}
 
-	private createAndEncryptDraftAttachment(
+	createAndEncryptDraftAttachment(
 		referenceTokens: BlobReferenceTokenWrapper[],
 		fileSessionKey: Aes128Key,
 		providedFile: DataFile | FileReference,

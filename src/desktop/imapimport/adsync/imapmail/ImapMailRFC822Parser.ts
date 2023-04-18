@@ -1,4 +1,4 @@
-import { ImapMailAttachment, ImapMailBody, ImapMailEnvelope, ImapMailFileAttachment } from "./ImapMail.js"
+import { ImapMailAttachment, ImapMailBody, ImapMailEnvelope } from "./ImapMail.js"
 import * as Stream from "stream"
 
 const MailParser = require("mailparser").MailParser
@@ -50,10 +50,7 @@ export class ImapMailRFC822Parser {
 							parsedImapRFC822.parsedAttachments = []
 						}
 
-						// TODO perform deduplication
-
-
-						let imapMailAttachment = new ImapMailFileAttachment(data.size, data.headers, data.contentType, content, data.checksum, data.related)
+						let imapMailAttachment = new ImapMailAttachment(data.size, data.headers, data.contentType, content, data.checksum, data.related)
 
 						if (data.filename) {
 							imapMailAttachment.setFilename(data.filename)

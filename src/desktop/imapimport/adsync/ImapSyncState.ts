@@ -14,7 +14,7 @@ export class ImapAccount {
 	}
 }
 
-export class ImapMailboxStateImportedIds {
+export class ImapMailIds {
 	uid: number
 	modSeq?: number
 	externalMailId?: any
@@ -29,15 +29,15 @@ export class ImapMailboxState {
 	uidValidity?: bigint
 	uidNext?: number
 	highestModSeq?: bigint | null // null indicates that the CONDSTORE IMAP extension, and therefore highestModSeq, is not supported
-	importedUidToIdsMap: Map<number, ImapMailboxStateImportedIds>
+	importedUidToMailIdsMap: Map<number, ImapMailIds>
 
-	constructor(path: string, importedUidToIdsMap: Map<number, ImapMailboxStateImportedIds>) {
+	constructor(path: string, importedUidToMailIdsMap: Map<number, ImapMailIds>) {
 		this.path = path
-		this.importedUidToIdsMap = importedUidToIdsMap
+		this.importedUidToMailIdsMap = importedUidToMailIdsMap
 	}
 
 	static fromImapMailbox(imapMailbox: ImapMailbox) {
-		return new ImapMailboxState(imapMailbox.path, new Map<number, ImapMailboxStateImportedIds>())
+		return new ImapMailboxState(imapMailbox.path, new Map<number, ImapMailIds>())
 	}
 }
 
@@ -45,12 +45,10 @@ export class ImapSyncState {
 	imapAccount: ImapAccount
 	maxQuota: number
 	mailboxStates: ImapMailboxState[]
-	importedAttachmentHashes: string[]
 
-	constructor(imapAccount: ImapAccount, maxQuata: number, mailboxStates: ImapMailboxState[], importedAttachmentHashes) {
+	constructor(imapAccount: ImapAccount, maxQuata: number, mailboxStates: ImapMailboxState[]) {
 		this.imapAccount = imapAccount
 		this.maxQuota = maxQuata
 		this.mailboxStates = mailboxStates
-		this.importedAttachmentHashes = importedAttachmentHashes
 	}
 }

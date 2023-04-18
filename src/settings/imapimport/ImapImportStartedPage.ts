@@ -5,6 +5,7 @@ import { emitWizardEvent, WizardEventType } from "../../gui/base/WizardDialog.js
 import { Button, ButtonType } from "../../gui/base/Button.js"
 import { assertMainOrNode } from "../../api/common/Env"
 import { AddImapImportData } from "./AddImapImportWizard.js"
+import { locator } from "../../api/main/MainLocator.js"
 
 assertMainOrNode()
 
@@ -26,6 +27,7 @@ export class ImapImportStartedPage implements WizardPageN<AddImapImportData> {
 				}),
 			),
 			m("p.text-center", lang.get("imapImportStartedExplanation_msg")),
+			m("p.text-center", lang.get("imapImportStartedNotify_msg")),
 			m(
 				".flex-center.full-width.pt-l.mb-l",
 				m(
@@ -48,6 +50,8 @@ export class ImapImportStartedPage implements WizardPageN<AddImapImportData> {
 
 export class ImapImportStartedPageAttrs implements WizardPageAttrs<AddImapImportData> {
 	data: AddImapImportData
+	preventGoBack = true
+	hidePagingButtonForPage = true
 
 	constructor(imapImportData: AddImapImportData) {
 		this.data = imapImportData
@@ -58,6 +62,7 @@ export class ImapImportStartedPageAttrs implements WizardPageAttrs<AddImapImport
 	}
 
 	async nextAction(showErrorDialog: boolean = true): Promise<boolean> {
+		await locator.imapImporterFacade.continueImport()
 		return Promise.resolve(true)
 	}
 

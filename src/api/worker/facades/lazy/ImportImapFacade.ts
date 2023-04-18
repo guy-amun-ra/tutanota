@@ -16,6 +16,8 @@ import {
 	createImportImapPostIn,
 	ImportImapAccountSyncState,
 	ImportImapAccountSyncStateTypeRef,
+	ImportImapAttachmentHashToId,
+	ImportImapAttachmentHashToIdTypeRef,
 	ImportImapFolderSyncState,
 	ImportImapFolderSyncStateTypeRef,
 	ImportImapUidToMailIds,
@@ -154,7 +156,15 @@ export class ImportImapFacade {
 		return this.entityClient.loadAll(ImportImapFolderSyncStateTypeRef, importImapFolderSyncStateListId)
 	}
 
-	async getImportedImapUidToMailIdsMap(importedImapUidToMailIdsMapId: Id): Promise<ImportImapUidToMailIds[]> {
+	async getImportedImapUidToMailIdsMapList(importedImapUidToMailIdsMapId: Id): Promise<ImportImapUidToMailIds[]> {
 		return this.entityClient.loadAll(ImportImapUidToMailIdsTypeRef, importedImapUidToMailIdsMapId)
+	}
+
+	async getImportedImapAttachmentHashToIdMap(importedImapAttachmentHashToIdMapId: IdTuple): Promise<ImportImapAttachmentHashToId> {
+		return this.entityClient.load(ImportImapAttachmentHashToIdTypeRef, importedImapAttachmentHashToIdMapId)
+	}
+
+	async getImportedImapAttachmentHashToIdMapList(importedImapAttachmentHashToIdMapListId: Id): Promise<ImportImapAttachmentHashToId[]> {
+		return this.entityClient.loadAll(ImportImapAttachmentHashToIdTypeRef, importedImapAttachmentHashToIdMapListId)
 	}
 }

@@ -1,16 +1,17 @@
 import { AdSyncEventType } from "../../../desktop/imapimport/adsync/AdSyncEventListener"
-import { ImportImapAccountSyncState, ImportImapFolderSyncState, MailFolder } from "../../entities/tutanota/TypeRefs.js"
+import { ImportImapAccountSyncState, ImportImapAttachmentHashToIdTypeRef, ImportImapFolderSyncState, MailFolder } from "../../entities/tutanota/TypeRefs.js"
 import { ImportImapFacade } from "../facades/lazy/ImportImapFacade.js"
 import { ImportMailFacade } from "../facades/lazy/ImportMailFacade.js"
 import { ImapImportState, ImportState } from "./ImapImportState.js"
 import { getFolderSyncStateForMailboxPath, imapMailToImportMailParams, importImapAccountToImapAccount } from "./ImapImportUtils.js"
-import { ImapMailboxState, ImapMailboxStateImportedIds, ImapSyncState } from "../../../desktop/imapimport/adsync/ImapSyncState.js"
+import { ImapMailboxState, ImapMailIds, ImapSyncState } from "../../../desktop/imapimport/adsync/ImapSyncState.js"
 import { ImapMailbox, ImapMailboxStatus } from "../../../desktop/imapimport/adsync/imapmail/ImapMailbox.js"
 import { ProgrammingError } from "../../common/error/ProgrammingError.js"
 import { ImapMail } from "../../../desktop/imapimport/adsync/imapmail/ImapMail.js"
 import { ImapError } from "../../../desktop/imapimport/adsync/imapmail/ImapError.js"
 import { ImapImportSystemFacade } from "../../../native/common/generatedipc/ImapImportSystemFacade.js"
 import { ImapImportFacade } from "../../../native/common/generatedipc/ImapImportFacade.js"
+import { EntityUpdateData, isUpdateForTypeRef } from "../../main/EventController.js"
 
 export interface InitializeImapImportParams {
 	host: string
@@ -26,8 +27,9 @@ export class ImapImporter implements ImapImportFacade {
 	private imapImportState: ImapImportState = new ImapImportState(ImportState.NOT_INITIALIZED)
 	private importImapAccountSyncState: ImportImapAccountSyncState | null = null
 	private importImapFolderSyncStates?: ImportImapFolderSyncState[]
+	private importedImapAttachmentHashToIdMap?: Map<string, IdTuple>
 
-	// TODO remove after testing and evaluation
+	// TODO remove after evaluation
 	private testMailCounter = 0
 	private testDownloadStartTime: Date = new Date()
 
@@ -78,9 +80,11 @@ export class ImapImporter implements ImapImportFacade {
 		let imapMailboxStates = await this.getAllImapMailboxStates(this.importImapAccountSyncState.imapFolderSyncStateList)
 		let imapSyncState = new ImapSyncState(imapAccount, maxQuota, imapMailboxStates)
 
+		this.importedImapAttachmentHashToIdMap = await this.getImportedImapAttachmentHashToIdMap()
+
 		await this.imapImportSystemFacade.startImport(imapSyncState)
 
-		// TODO remove after testing and evaluation
+		// TODO remove after evaluation
 		this.testMailCounter = 0
 		this.testDownloadStartTime.setTime(Date.now())
 
@@ -123,23 +127,42 @@ export class ImapImporter implements ImapImportFacade {
 		this.importImapFolderSyncStates = await this.loadAllImportImapFolderSyncStates(importImapFolderSyncStateListId)
 
 		for (const folderSyncState of this.importImapFolderSyncStates) {
-			let importImapUidToIdsMap = new Map<number, ImapMailboxStateImportedIds>()
-			let importImapUidToMailIdMapList = await this.importImapFacade.getImportedImapUidToMailIdsMap(folderSyncState.importedImapUidToMailIdsMap)
-			importImapUidToMailIdMapList.forEach((importImapUidToMailIds) => {
+			let importedImapUidToMailIdsMap = new Map<number, ImapMailIds>()
+			let importedImapUidToMailIdMapList = await this.importImapFacade.getImportedImapUidToMailIdsMapList(folderSyncState.importedImapUidToMailIdsMap)
+			importedImapUidToMailIdMapList.forEach((importImapUidToMailIds) => {
 				let imapUid = parseInt(importImapUidToMailIds.imapUid)
-				let imapMailboxStateImportedIds = new ImapMailboxStateImportedIds(imapUid)
+				let importedImapMailIds = new ImapMailIds(imapUid)
 				if (importImapUidToMailIds.imapModSeq != null) {
-					imapMailboxStateImportedIds.modSeq = parseInt(importImapUidToMailIds.imapModSeq)
+					importedImapMailIds.modSeq = parseInt(importImapUidToMailIds.imapModSeq)
 				}
-				imapMailboxStateImportedIds.externalMailId = importImapUidToMailIds.mail
+				importedImapMailIds.externalMailId = importImapUidToMailIds.mail
 
-				importImapUidToIdsMap.set(imapUid, imapMailboxStateImportedIds)
+				importedImapUidToMailIdsMap.set(imapUid, importedImapMailIds)
 			})
 
-			imapMailboxStates.push(new ImapMailboxState(folderSyncState.path, importImapUidToIdsMap))
+			imapMailboxStates.push(new ImapMailboxState(folderSyncState.path, importedImapUidToMailIdsMap))
 		}
 
 		return imapMailboxStates
+	}
+
+	private async getImportedImapAttachmentHashToIdMap(): Promise<Map<string, IdTuple>> {
+		if (this.importImapAccountSyncState == null) {
+			throw new ProgrammingError("ImportImapAccountSyncState not initialized!")
+		}
+
+		let importedImapAttachmentHashToIdMap = new Map<string, IdTuple>()
+		let importedImapAttachmentHashToIdMapList = await this.importImapFacade.getImportedImapAttachmentHashToIdMapList(
+			this.importImapAccountSyncState.importedImapAttachmentHashToIdMap,
+		)
+
+		importedImapAttachmentHashToIdMapList.forEach((importedImapAttachmentHashToId) => {
+			let imapAttachmentHash = importedImapAttachmentHashToId.imapAttachmentHash
+			let attachmentId = importedImapAttachmentHashToId.attachment
+			importedImapAttachmentHashToIdMap.set(imapAttachmentHash, attachmentId)
+		})
+
+		return importedImapAttachmentHashToIdMap
 	}
 
 	async onMailbox(imapMailbox: ImapMailbox, eventType: AdSyncEventType): Promise<void> {
@@ -197,16 +220,20 @@ export class ImapImporter implements ImapImportFacade {
 		console.log("onMail")
 		console.log(imapMail)
 
-		// TODO remove after testing and evaluation
+		// TODO remove after evaluation
 		this.testMailCounter += 1
 
 		if (this.importImapFolderSyncStates === undefined) {
 			throw new ProgrammingError("onMail event received but importImapFolderSyncStates not initialized!")
 		}
 
+		if (this.importedImapAttachmentHashToIdMap === undefined) {
+			throw new ProgrammingError("onMail event received but importedImapAttachmentHashToIdMap not initialized!")
+		}
+
 		let folderSyncState = getFolderSyncStateForMailboxPath(imapMail.belongsToMailbox.path, this.importImapFolderSyncStates)
 		if (folderSyncState) {
-			let importMailParams = imapMailToImportMailParams(imapMail, folderSyncState._id)
+			let importMailParams = imapMailToImportMailParams(imapMail, folderSyncState._id, this.importedImapAttachmentHashToIdMap)
 
 			switch (eventType) {
 				case AdSyncEventType.CREATE:
@@ -236,7 +263,7 @@ export class ImapImporter implements ImapImportFacade {
 	onFinish(downloadedQuota: number): Promise<void> {
 		console.log("onFinish")
 
-		// TODO remove after testing and evaluation
+		// TODO remove after evaluation
 		let downloadTime = Date.now() - this.testDownloadStartTime.getTime()
 		console.log("Downloaded data (byte): " + downloadedQuota)
 		console.log("Took (ms): " + downloadTime)
@@ -254,7 +281,22 @@ export class ImapImporter implements ImapImportFacade {
 		return Promise.resolve()
 	}
 
-	async loadImapImportState(): Promise<ImapImportState> {
+	loadImapImportState(): ImapImportState {
 		return this.imapImportState
+	}
+
+	// TODO make this work
+	async entityEventsReceived(updates: ReadonlyArray<EntityUpdateData>): Promise<void> {
+		for (const update of updates) {
+			if (isUpdateForTypeRef(ImportImapAttachmentHashToIdTypeRef, update)) {
+				if (this.importImapAccountSyncState) {
+					let importedImapAttachmentToIdMap = await this.importImapFacade.getImportedImapAttachmentHashToIdMap([
+						update.instanceListId,
+						update.instanceListId,
+					])
+					this.importedImapAttachmentHashToIdMap?.set(importedImapAttachmentToIdMap.imapAttachmentHash, importedImapAttachmentToIdMap.attachment)
+				}
+			}
+		}
 	}
 }

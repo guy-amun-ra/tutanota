@@ -1112,6 +1112,21 @@ export type ImapSyncState = {
 
 	folders: ImapFolder[];
 }
+export const ImportAttachmentTypeRef: TypeRef<ImportAttachment> = new TypeRef("tutanota", "ImportAttachment")
+
+export function createImportAttachment(values?: Partial<ImportAttachment>): ImportAttachment {
+	return Object.assign(create(typeModels.ImportAttachment, ImportAttachmentTypeRef), values)
+}
+
+export type ImportAttachment = {
+	_type: TypeRef<ImportAttachment>;
+
+	_id: Id;
+	ownerEncFileSessionKey: Uint8Array;
+
+	existingFile:  null | IdTuple;
+	newFile:  null | NewImportAttachment;
+}
 export const ImportImapAccountTypeRef: TypeRef<ImportImapAccount> = new TypeRef("tutanota", "ImportImapAccount")
 
 export function createImportImapAccount(values?: Partial<ImportImapAccount>): ImportImapAccount {
@@ -1149,7 +1164,27 @@ export type ImportImapAccountSyncState = {
 
 	imapAccount: ImportImapAccount;
 	imapFolderSyncStateList: Id;
+	importedImapAttachmentHashToIdMap: Id;
 	rootImportMailFolder:  null | IdTuple;
+}
+export const ImportImapAttachmentHashToIdTypeRef: TypeRef<ImportImapAttachmentHashToId> = new TypeRef("tutanota", "ImportImapAttachmentHashToId")
+
+export function createImportImapAttachmentHashToId(values?: Partial<ImportImapAttachmentHashToId>): ImportImapAttachmentHashToId {
+	return Object.assign(create(typeModels.ImportImapAttachmentHashToId, ImportImapAttachmentHashToIdTypeRef), values)
+}
+
+export type ImportImapAttachmentHashToId = {
+	_type: TypeRef<ImportImapAttachmentHashToId>;
+	_errors: Object;
+
+	_format: NumberString;
+	_id: IdTuple;
+	_ownerEncSessionKey: null | Uint8Array;
+	_ownerGroup: null | Id;
+	_permissions: Id;
+	imapAttachmentHash: string;
+
+	attachment: IdTuple;
 }
 export const ImportImapDeleteInTypeRef: TypeRef<ImportImapDeleteIn> = new TypeRef("tutanota", "ImportImapDeleteIn")
 
@@ -1313,11 +1348,10 @@ export type ImportMailData = {
 	subject: string;
 	unread: boolean;
 
-	addedAttachments: DraftAttachment[];
 	bccRecipients: DraftRecipient[];
 	ccRecipients: DraftRecipient[];
+	importedAttachments: ImportAttachment[];
 	references: ImportMailDataMailReference[];
-	removedAttachments: IdTuple[];
 	replyTos: EncryptedMailAddress[];
 	toRecipients: DraftRecipient[];
 }
@@ -1799,6 +1833,24 @@ export type NewDraftAttachment = {
 	encMimeType: Uint8Array;
 
 	fileData:  null | Id;
+	referenceTokens: BlobReferenceTokenWrapper[];
+}
+export const NewImportAttachmentTypeRef: TypeRef<NewImportAttachment> = new TypeRef("tutanota", "NewImportAttachment")
+
+export function createNewImportAttachment(values?: Partial<NewImportAttachment>): NewImportAttachment {
+	return Object.assign(create(typeModels.NewImportAttachment, NewImportAttachmentTypeRef), values)
+}
+
+export type NewImportAttachment = {
+	_type: TypeRef<NewImportAttachment>;
+
+	_id: Id;
+	encCid: null | Uint8Array;
+	encFileHash: null | Uint8Array;
+	encFileName: Uint8Array;
+	encMimeType: Uint8Array;
+	ownerEncFileHashSessionKey: null | Uint8Array;
+
 	referenceTokens: BlobReferenceTokenWrapper[];
 }
 export const NewsIdTypeRef: TypeRef<NewsId> = new TypeRef("tutanota", "NewsId")

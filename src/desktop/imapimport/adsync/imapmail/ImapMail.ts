@@ -3,6 +3,7 @@
 import { FetchMessageObject } from "imapflow"
 import { ImapMailRFC822Parser, MailParserAddressObject } from "./ImapMailRFC822Parser.js"
 import { ImapMailbox } from "./ImapMailbox.js"
+import { AdSyncConfig } from "../ImapAdSync.js"
 
 export class ImapMailAddress {
 	name?: string
@@ -156,15 +157,11 @@ export class ImapMailEnvelope {
 		return imapMailEnvelope
 	}
 }
-
-export type ImapMailAttachment = ImapMailFileAttachment | ImapMailReferenceAttachment
-
-export class ImapMailFileAttachment {
+export class ImapMailAttachment {
 	size: number
 	headers: Map<string, string>
 	contentType: string
 	content: Buffer
-	contentHash?: String
 	filename?: string
 	cid?: string
 	checksum: string
@@ -186,11 +183,6 @@ export class ImapMailFileAttachment {
 
 	setCid(cid: string): this {
 		this.cid = cid
-		return this
-	}
-
-	setContentHash(contentHash: string): this {
-		this.contentHash = contentHash
 		return this
 	}
 }
