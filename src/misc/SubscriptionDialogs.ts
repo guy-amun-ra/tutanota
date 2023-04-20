@@ -6,6 +6,12 @@ import { InfoLink, lang } from "./LanguageViewModel"
 import { isIOSApp } from "../api/common/Env"
 import type { clickHandler } from "../gui/base/GuiUtils"
 import { locator } from "../api/main/MainLocator"
+import { showSwitchDialog } from "../subscription/SwitchSubscriptionDialog.js"
+import { BookingTypeRef } from "../api/entities/sys/TypeRefs.js"
+import { assertNotNull, downcast, neverNull } from "@tutao/tutanota-utils"
+import { GENERATED_MAX_ID } from "../api/common/utils/EntityUtils.js"
+import { isNewPlan } from "../subscription/FeatureListProvider.js"
+import { PlanTypeToName } from "../api/common/TutanotaConstants.js"
 
 /**
  * Opens a dialog which states that the function is not available in the Free subscription and provides an option to upgrade.
@@ -79,10 +85,16 @@ export function showMoreStorageNeededOrderDialog(loginController: LoginControlle
  * @returns true if the business feature has been ordered
  */
 export async function showBusinessFeatureRequiredDialog(reason: TranslationKey | lazy<string>): Promise<boolean> {
-	if (locator.logins.getUserController().isFreeAccount()) {
+	const userController = locator.logins.getUserController()
+	if (userController.isFreeAccount()) {
 		showNotAvailableForFreeDialog(false)
 		return false
 	} else {
-		return (await import("../subscription/BuyDialog.js")).showBusinessBuyDialog(true)
+		let customerInfo = await userController.loadCustomerInfo()
+		const bookings = await locator.entityClient.loadRange(BookingTypeRef, neverNull(customerInfo.bookings).items, GENERATED_MAX_ID, 1, true)
+		await showSwitchDialog(await userController.loadCustomer(), customerInfo, await userController.loadAccountingInfo(), assertNotNull(bookings[0]))
+		customerInfo = await userController.loadCustomerInfo()
+		// FIXME wait until SwitchAccountTypeService was invoked and customerInfo was updated.
+		return isNewPlan(downcast(customerInfo.plan))
 	}
 }

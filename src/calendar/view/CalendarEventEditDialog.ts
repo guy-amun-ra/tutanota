@@ -638,7 +638,7 @@ function renderAddAttendeesField(text: Stream<string>, viewModel: CalendarEventV
 			recipients: [],
 			disabled: false,
 			onRecipientAdded: async (address, name, contact) => {
-				const notAvailable = viewModel.shouldShowSendInviteNotAvailable()
+				const notAvailable = await viewModel.shouldShowSendInviteNotAvailable()
 				if (notAvailable) {
 					const businessFeatureOrdered = await showBusinessFeatureRequiredDialog("businessFeatureRequiredInvite_msg")
 					if (businessFeatureOrdered) {

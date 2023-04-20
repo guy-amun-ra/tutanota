@@ -114,7 +114,7 @@ function createSubscriptionPlanButton(dialog: Dialog, targetSubscription: PlanTy
 	return () => ({
 		label: "pricing.select_action",
 		click: () => {
-			switchSubscription(targetSubscription, dialog, currentSubscriptionInfo)
+			showProgressDialog("pleaseWait_msg", switchSubscription(targetSubscription, dialog, currentSubscriptionInfo))
 		},
 		type: ButtonType.Login,
 	})
@@ -241,37 +241,7 @@ async function getUpOrDowngradeMessage(targetSubscription: PlanType, currentSubs
 	return msg
 }
 
-async function checkNeededUpgrades(targetSubscription: PlanType, currentSubscriptionInfo: CurrentSubscriptionInfo): Promise<void> {
-	const priceAndConfigProvider = await PriceAndConfigProvider.getInitializedInstance(null)
-	const targetPlanPrices = priceAndConfigProvider.getPlanPrices(targetSubscription)
-	if (isNewPlan(targetSubscription)) {
-		let targetFeatureType = toFeatureType(targetSubscription)
-		if (targetFeatureType != null) {
-			// bookItem(targetFeatureType, amount)
-		}
-	}
-
-	if (isUpgradeAliasesNeeded(targetPlanPrices, currentSubscriptionInfo.currentTotalAliases)) {
-		await buyAliases(Number(targetPlanPrices.includedAliases))
-	}
-	if (isUpgradeStorageNeeded(targetPlanPrices, currentSubscriptionInfo.currentTotalStorage)) {
-		await buyStorage(Number(targetPlanPrices.includedStorage))
-	}
-	if (isUpgradeSharingNeeded(targetPlanPrices, currentSubscriptionInfo.currentlySharingOrdered)) {
-		await buySharing(true)
-	}
-	if (isUpgradeBusinessNeeded(targetPlanPrices, currentSubscriptionInfo.currentlyBusinessOrdered)) {
-		await buyBusiness(true)
-	}
-	if (isUpgradeWhitelabelNeeded(targetPlanPrices, currentSubscriptionInfo.currentlyWhitelabelOrdered)) {
-		await buyWhitelabel(true)
-	}
-	if (isSubscriptionDowngrade(targetSubscription, currentSubscriptionInfo.planType)) {
-		await cancelAllAdditionalFeatures(targetSubscription, currentSubscriptionInfo)
-	}
-}
-
-async function switchSubscription(targetSubscription: PlanType, dialog: Dialog, currentSubscriptionInfo: CurrentSubscriptionInfo) {
+async function switchSubscription(targetSubscription: PlanType, dialog: Dialog, currentSubscriptionInfo: CurrentSubscriptionInfo): Promise<void> {
 	if (targetSubscription === currentSubscriptionInfo.planType) {
 		return
 	}
@@ -282,7 +252,19 @@ async function switchSubscription(targetSubscription: PlanType, dialog: Dialog, 
 		return
 	}
 	try {
-		await showProgressDialog("pleaseWait_msg", checkNeededUpgrades(targetSubscription, currentSubscriptionInfo))
+		const postIn = createSwitchAccountTypePostIn()
+		postIn.accountType = AccountType.PREMIUM
+		postIn.plan = targetSubscription
+		postIn.date = Const.CURRENT_DATE
+		postIn.referralCode = null
+
+		try {
+			await showProgressDialog("pleaseWait_msg", locator.serviceExecutor.post(SwitchAccountTypeService, postIn))
+		} catch (e) {
+			if (e instanceof PreconditionFailedError) {
+				return handleSwitchAccountPreconditionFailed(e)
+			}
+		}
 	} finally {
 		dialog.close()
 	}
