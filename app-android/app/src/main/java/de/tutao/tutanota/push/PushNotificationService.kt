@@ -3,25 +3,27 @@ package de.tutao.tutanota.push
 import android.app.job.JobParameters
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.util.Log
 import androidx.lifecycle.lifecycleScope
-import de.tutao.tutanota.AndroidNativeCryptoFacade
-import de.tutao.tutanota.LifecycleJobService
-import de.tutao.tutanota.MainActivity
-import de.tutao.tutanota.NetworkUtils
 import de.tutao.tutanota.alarms.AlarmNotificationsManager
 import de.tutao.tutanota.alarms.SystemAlarmFacade
-import de.tutao.tutanota.atLeastOreo
-import de.tutao.tutanota.atLeastTiramisu
-import de.tutao.tutanota.createAndroidKeyStoreFacade
-import de.tutao.tutanota.credentials.AndroidNativeCredentialsFacade
-import de.tutao.tutanota.credentials.CredentialsEncryptionFactory
-import de.tutao.tutanota.data.AppDatabase
-import de.tutao.tutanota.data.SseInfo
-import de.tutao.tutanota.ipc.NativeCredentialsFacade
 import de.tutao.tutanota.push.SseClient.SseListener
+import de.tutao.tutashared.AndroidNativeCryptoFacade
+import de.tutao.tutashared.LifecycleJobService
+import de.tutao.tutashared.NetworkUtils
+import de.tutao.tutashared.atLeastQuinceTart
+import de.tutao.tutashared.atLeastTiramisu
+import de.tutao.tutashared.createAndroidKeyStoreFacade
+import de.tutao.tutashared.credentials.CredentialsEncryptionFactory
+import de.tutao.tutashared.data.AppDatabase
+import de.tutao.tutashared.data.SseInfo
+import de.tutao.tutashared.ipc.NativeCredentialsFacade
+import de.tutao.tutashared.offline.AndroidSqlCipherFacade
+import de.tutao.tutashared.push.SseStorage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
@@ -77,7 +79,6 @@ class PushNotificationService : LifecycleJobService() {
 
 		finishJobThread.start()
 
-
 		val appDatabase: AppDatabase = AppDatabase.getDatabase(this, allowMainThreadAccess = true)
 		val crypto = AndroidNativeCryptoFacade(this)
 		val keyStoreFacade = createAndroidKeyStoreFacade()
@@ -104,35 +105,36 @@ class PushNotificationService : LifecycleJobService() {
 			),
 			NetworkUtils.defaultClient
 		)
-		sseStorage.observeUsers().observeForever { userInfos ->
-			Log.d(TAG, "sse storage updated " + userInfos.size)
-			// Closing the connection sends RST packets over network and it triggers StrictMode
-			// violations so we dispatch it to another thread.
-			lifecycleScope.launch(Dispatchers.IO) {
-				val userIds = userInfos.mapTo(HashSet()) { it.userId }
+		lifecycleScope.launch {
+			sseStorage.observeUsers().collect { userInfos ->
+				Log.d(TAG, "sse storage updated " + userInfos.size)
+				// Closing the connection sends RST packets over network and it triggers StrictMode
+				// violations so we dispatch it to another thread.
+				withContext(Dispatchers.IO) {
+					val userIds = userInfos.mapTo(HashSet()) { it.userId }
 
-				if (userIds.isEmpty()) {
-					sseClient.stopConnection()
-					removeForegroundNotification()
-					finishJobIfNeeded()
-				} else {
-					sseClient.restartConnectionIfNeeded(
-						SseInfo(
-							sseStorage.getPushIdentifier()!!,
-							userIds,
-							sseStorage.getSseOrigin()!!
+					if (userIds.isEmpty()) {
+						sseClient.stopConnection()
+						removeForegroundNotification()
+						finishJobIfNeeded()
+					} else {
+						sseClient.restartConnectionIfNeeded(
+							SseInfo(
+								sseStorage.getPushIdentifier()!!,
+								userIds,
+								sseStorage.getSseOrigin()!!
+							)
 						)
-					)
+					}
 				}
 			}
 		}
 
-		if (atLeastOreo()) {
-			localNotificationsFacade.createNotificationChannels()
-		}
+		localNotificationsFacade.createNotificationChannels()
 	}
 
 
+	@Suppress("DEPRECATION")
 	private fun removeForegroundNotification() {
 		Log.d(TAG, "removeForegroundNotification")
 		if (atLeastTiramisu()) {
@@ -159,10 +161,14 @@ class PushNotificationService : LifecycleJobService() {
 		// We don't even want to try `startForeground` if we are launched from a context where it isn't allowed so we
 		// pass it as a parameter.
 		// see https://developer.android.com/guide/components/foreground-services#background-start-restrictions
-		if (atLeastOreo() && this.state == State.STARTED && attemptForeground) {
+		if (atLeastQuinceTart() && this.state == State.STARTED && attemptForeground) {
 			Log.d(TAG, "Starting foreground")
 			try {
-				startForeground(1, localNotificationsFacade.makeConnectionNotification())
+				startForeground(
+					1,
+					localNotificationsFacade.makeConnectionNotification(),
+					ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+				)
 			} catch (e: IllegalStateException) {
 				// probably ForegroundServiceStartNotAllowedException
 				Log.w(TAG, "Could not start the service in foreground", e)
@@ -236,7 +242,8 @@ class PushNotificationService : LifecycleJobService() {
 				nativeCredentialsFacade,
 				alarmNotificationsManager,
 				defaultClient,
-				lifecycleScope
+				lifecycleScope,
+				{ AndroidSqlCipherFacade(this@PushNotificationService) }
 			)
 
 		override fun onStartingConnection(): Boolean {

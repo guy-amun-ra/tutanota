@@ -1,41 +1,5 @@
-[package]
-name = "tuta-sdk"
-version = "0.1.0"
-edition = "2021"
+[workspace]
 
-[dependencies]
-# should not depend on cli but because bin is not in its own crate (yet) we have to use it
-uniffi = { git = "https://github.com/mozilla/uniffi-rs.git", rev = "13a1c559cb3708eeca40dcf95dc8b3ccccf3b88c", features = ["cli"] }
-wasm-bindgen = "0.2.74"
-wasm-bindgen-futures = "0.4.40"
-async-trait = "0.1.77"
-serde = "1.0.201"
-serde_json = "1.0.117"
-thiserror = "1.0.60"
-base64 = "0.22.1"
-aes = { version = "0.8.4", features = ["zeroize"] }
-cbc = { version = "0.1.2", features = ["std", "zeroize"] }
-sha2 = "0.10.8"
-const-hex = { version = "1.12.0", features = ["serde"] }
-hmac = "0.12.1"
-zeroize = { version = "1.8.1", features = ["zeroize_derive"] }
-hkdf = "0.12.4"
-argon2 = { version = "0.5.3", features = ["zeroize"] }
-curve25519-dalek = "4.1.2"
-pqcrypto-kyber = { version = "0.7.6", default-features = false, features = ["std"] }
-pqcrypto-traits = "0.3.4"
-rsa = "0.9.6"
+resolver = "2"
 
-[build-dependencies]
-uniffi = { git = "https://github.com/mozilla/uniffi-rs.git", rev = "13a1c559cb3708eeca40dcf95dc8b3ccccf3b88c", features = ["build"] }
-
-[dev-dependencies]
-mockall = "0.12.1"
-
-[lib]
-crate-type = ["cdylib", "staticlib", "lib"]
-name = "tutasdk"
-
-[[bin]]
-name = "uniffi-bindgen"
-path = "uniffi-bindgen.rs"
+members = ["sdk", "uniffi-bindgen"]

@@ -5,24 +5,24 @@ import {
 	InternalServerError,
 	NotAuthorizedError,
 	PayloadTooLargeError,
-} from "../../../../../src/api/common/error/RestError.js"
+} from "../../../../../src/common/api/common/error/RestError.js"
 import { assertThrows } from "@tutao/tutanota-test-utils"
-import { SetupMultipleError } from "../../../../../src/api/common/error/SetupMultipleError.js"
-import { HttpMethod, MediaType, resolveTypeReference } from "../../../../../src/api/common/EntityFunctions.js"
-import { CustomerServerPropertiesTypeRef, CustomerTypeRef } from "../../../../../src/api/entities/sys/TypeRefs.js"
-import { doBlobRequestWithRetry, EntityRestClient, tryServers, typeRefToPath } from "../../../../../src/api/worker/rest/EntityRestClient.js"
-import { RestClient } from "../../../../../src/api/worker/rest/RestClient.js"
-import type { CryptoFacade } from "../../../../../src/api/worker/crypto/CryptoFacade.js"
-import { InstanceMapper } from "../../../../../src/api/worker/crypto/InstanceMapper.js"
+import { SetupMultipleError } from "../../../../../src/common/api/common/error/SetupMultipleError.js"
+import { HttpMethod, MediaType, resolveTypeReference } from "../../../../../src/common/api/common/EntityFunctions.js"
+import { CustomerServerPropertiesTypeRef, CustomerTypeRef } from "../../../../../src/common/api/entities/sys/TypeRefs.js"
+import { doBlobRequestWithRetry, EntityRestClient, tryServers, typeRefToPath } from "../../../../../src/common/api/worker/rest/EntityRestClient.js"
+import { RestClient } from "../../../../../src/common/api/worker/rest/RestClient.js"
+import type { CryptoFacade } from "../../../../../src/common/api/worker/crypto/CryptoFacade.js"
+import { InstanceMapper } from "../../../../../src/common/api/worker/crypto/InstanceMapper.js"
 import { func, instance, matchers, object, verify, when } from "testdouble"
-import tutanotaModelInfo from "../../../../../src/api/entities/tutanota/ModelInfo.js"
-import sysModelInfo from "../../../../../src/api/entities/sys/ModelInfo.js"
-import { AuthDataProvider } from "../../../../../src/api/worker/facades/UserFacade.js"
-import { LoginIncompleteError } from "../../../../../src/api/common/error/LoginIncompleteError.js"
-import { BlobServerAccessInfoTypeRef, BlobServerUrlTypeRef } from "../../../../../src/api/entities/storage/TypeRefs.js"
+import tutanotaModelInfo from "../../../../../src/common/api/entities/tutanota/ModelInfo.js"
+import sysModelInfo from "../../../../../src/common/api/entities/sys/ModelInfo.js"
+import { AuthDataProvider } from "../../../../../src/common/api/worker/facades/UserFacade.js"
+import { LoginIncompleteError } from "../../../../../src/common/api/common/error/LoginIncompleteError.js"
+import { BlobServerAccessInfoTypeRef, BlobServerUrlTypeRef } from "../../../../../src/common/api/entities/storage/TypeRefs.js"
 import { freshVersioned, Mapper, ofClass } from "@tutao/tutanota-utils"
-import { ProgrammingError } from "../../../../../src/api/common/error/ProgrammingError.js"
-import { BlobAccessTokenFacade } from "../../../../../src/api/worker/facades/BlobAccessTokenFacade.js"
+import { ProgrammingError } from "../../../../../src/common/api/common/error/ProgrammingError.js"
+import { BlobAccessTokenFacade } from "../../../../../src/common/api/worker/facades/BlobAccessTokenFacade.js"
 import {
 	CalendarEventTypeRef,
 	Contact,
@@ -30,10 +30,10 @@ import {
 	InternalRecipientKeyDataTypeRef,
 	MailDetailsBlob,
 	MailDetailsBlobTypeRef,
-} from "../../../../../src/api/entities/tutanota/TypeRefs.js"
-import { DateProvider } from "../../../../../src/api/common/DateProvider.js"
-import { DefaultDateProvider } from "../../../../../src/calendar/date/CalendarUtils.js"
+} from "../../../../../src/common/api/entities/tutanota/TypeRefs.js"
+import { DateProvider } from "../../../../../src/common/api/common/DateProvider.js"
 import { createTestEntity } from "../../../TestUtils.js"
+import { DefaultDateProvider } from "../../../../../src/common/calendar/date/CalendarUtils.js"
 
 const { anything, argThat } = matchers
 
@@ -157,7 +157,7 @@ o.spec("EntityRestClient", function () {
 				}),
 			).thenResolve(JSON.stringify({ instance: "calendar" }))
 
-			await entityRestClient.load(CalendarEventTypeRef, [calendarListId, id1], { foo: "bar" }, { baz: "quux" })
+			await entityRestClient.load(CalendarEventTypeRef, [calendarListId, id1], { queryParams: { foo: "bar" }, extraHeaders: { baz: "quux" } })
 		})
 
 		o("when loading encrypted instance and not being logged in it throws an error", async function () {
@@ -181,7 +181,7 @@ o.spec("EntityRestClient", function () {
 			const sessionKey = [3, 2, 1]
 			when(cryptoFacadeMock.resolveSessionKeyWithOwnerKey(anything(), ownerKey)).thenReturn(sessionKey)
 
-			const result = await entityRestClient.load(CalendarEventTypeRef, [calendarListId, id1], undefined, undefined, async (_) => ownerKey)
+			const result = await entityRestClient.load(CalendarEventTypeRef, [calendarListId, id1], { ownerKeyProvider: async (_) => ownerKey })
 
 			const typeModel = await resolveTypeReference(CalendarEventTypeRef)
 			verify(instanceMapperMock.decryptAndMapToInstance(typeModel, anything(), sessionKey))
@@ -832,9 +832,11 @@ o.spec("EntityRestClient", function () {
 			const sessionKey = [3, 2, 1]
 			when(cryptoFacadeMock.resolveSessionKeyWithOwnerKey(anything(), ownerKey.object)).thenReturn(sessionKey)
 
-			await entityRestClient.update(newCustomerServerProperties, async (version) => {
-				o(version).equals(ownerKeyVersion)
-				return ownerKey.object
+			await entityRestClient.update(newCustomerServerProperties, {
+				ownerKeyProvider: async (version) => {
+					o(version).equals(ownerKeyVersion)
+					return ownerKey.object
+				},
 			})
 
 			verify(instanceMapperMock.encryptAndMapToLiteral(anything(), anything(), sessionKey))

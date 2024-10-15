@@ -1,10 +1,9 @@
-import org.gradle.process.internal.ExecException
-import java.io.ByteArrayOutputStream
-
+// There is currently a bug in Android Gradle Plugin 8.4+.
+// Workaround from https://github.com/mozilla/rust-android-gradle/issues/147#issuecomment-2134688017
 plugins {
+	id("org.mozilla.rust-android-gradle.rust-android")
 	id("com.android.library")
 	id("org.jetbrains.kotlin.android")
-	id("org.mozilla.rust-android-gradle.rust-android")
 }
 
 fun getActiveBuildType(): String {
@@ -20,6 +19,7 @@ fun getActiveBuildType(): String {
 	}
 	return buildType
 }
+
 fun getABITargets(): List<String> {
 	var abi = project.gradle.parent?.startParameter?.projectProperties?.get("targetABI")
 	if (abi.isNullOrBlank())
@@ -30,6 +30,7 @@ fun getABITargets(): List<String> {
 	else
 		listOf(abi)
 }
+
 fun getJNILibsDirs(): List<String> {
 	val abiTargets = getABITargets()
 	return abiTargets.map {
@@ -52,16 +53,23 @@ android {
 		minSdk = 26
 
 		testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+		// Proguard rules that are passed on to the users of the library
+		// See https://developer.android.com/studio/projects/android-library#Considerations
 		consumerProguardFiles("consumer-rules.pro")
 	}
 
 	buildTypes {
 		debug {
-			isJniDebuggable=true
+			isJniDebuggable = true
 		}
 		release {
+			// Do not apply minification to the library artifact itself, without the application code that references
+			// the specific classes we cannot know what we need to keep so we would have to effectively disable
+			// minification anyway.
 			isMinifyEnabled = false
-			proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+		}
+		create("releaseTest") {
+			initWith(getByName("release"))
 		}
 	}
 	compileOptions {
@@ -75,12 +83,12 @@ android {
 }
 
 dependencies {
-	implementation("net.java.dev.jna:jna:5.13.0@aar")
-	implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+	implementation("net.java.dev.jna:jna:5.14.0@aar")
+	implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
 	implementation("androidx.annotation:annotation:1.8.0")
 	testImplementation("junit:junit:4.13.2")
-	androidTestImplementation("androidx.test.ext:junit:1.1.5")
-	androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+	androidTestImplementation("androidx.test.ext:junit:1.2.1")
+	androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
 }
 
 cargo {
@@ -111,15 +119,17 @@ tasks.register("generateBinding") {
 
 tasks.whenTaskAdded {
 	when (name) {
-		"preDebugBuild", "preReleaseBuild" -> {
+		"preDebugBuild", "preReleaseBuild", "preReleaseTestBuild" -> {
 			dependsOn("clean")
 			mustRunAfter("clean")
 		}
-		"compileDebugKotlin", "compileReleaseKotlin" -> {
+
+		"compileDebugKotlin", "compileReleaseKotlin", "compileReleaseTestKotlin" -> {
 			dependsOn("generateBinding")
 			mustRunAfter("generateBinding")
 		}
-		"mergeDebugJniLibFolders", "mergeReleaseJniLibFolders" -> {
+
+		"mergeDebugJniLibFolders", "mergeReleaseJniLibFolders", "mergeReleaseTestJniLibFolders" -> {
 			dependsOn("cargoBuild")
 			mustRunAfter("cargoBuild")
 		}

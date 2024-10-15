@@ -1,9 +1,9 @@
 import o from "@tutao/otest"
-import { DeviceConfig, DeviceConfigCredentials, ListAutoSelectBehavior, migrateConfig, migrateConfigV2to3 } from "../../../src/misc/DeviceConfig.js"
+import { DeviceConfig, DeviceConfigCredentials, ListAutoSelectBehavior, migrateConfig, migrateConfigV2to3 } from "../../../src/common/misc/DeviceConfig.js"
 import { matchers, object, when } from "testdouble"
 import { verify } from "@tutao/tutanota-test-utils"
-import { CredentialEncryptionMode } from "../../../src/misc/credentials/CredentialEncryptionMode.js"
-import { CredentialType } from "../../../src/misc/credentials/CredentialType.js"
+import { CredentialEncryptionMode } from "../../../src/common/misc/credentials/CredentialEncryptionMode.js"
+import { CredentialType } from "../../../src/common/misc/credentials/CredentialType.js"
 
 o.spec("DeviceConfig", function () {
 	o.spec("migrateConfig", function () {
@@ -37,6 +37,7 @@ o.spec("DeviceConfig", function () {
 					},
 					accessToken: "internalAccessToken",
 					encryptedPassword: "internalEncPassword",
+					encryptedPassphraseKey: null,
 				},
 				externalUserId: {
 					credentialInfo: {
@@ -46,6 +47,7 @@ o.spec("DeviceConfig", function () {
 					},
 					accessToken: "externalAccessToken",
 					encryptedPassword: "externalEncPassword",
+					encryptedPassphraseKey: null,
 				},
 			}
 
@@ -103,6 +105,7 @@ o.spec("DeviceConfig", function () {
 				isCalendarDaySelectorExpanded: false,
 				mailAutoSelectBehavior: ListAutoSelectBehavior.OLDER,
 				isSetupComplete: true,
+				lastExternalCalendarSync: {},
 			}
 
 			when(localStorageMock.getItem(DeviceConfig.LocalStorageKey)).thenReturn(JSON.stringify(storedInLocalStorage))
@@ -125,6 +128,7 @@ o.spec("DeviceConfig", function () {
 						},
 						accessToken: "internalAccessToken",
 						encryptedPassword: "internalEncPassword",
+						encryptedPassphraseKey: null,
 					},
 				},
 				hasParticipatedInCredentialsMigration: false,

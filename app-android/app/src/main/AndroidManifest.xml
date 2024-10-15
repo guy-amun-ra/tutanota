@@ -17,6 +17,8 @@
 	<uses-permission android:name="android.permission.MANAGE_ACCOUNTS"/>
 	<uses-permission android:name="android.permission.AUTHENTICATE_ACCOUNTS"/>
 	<uses-permission android:name="android.permission.USE_CREDENTIALS"/>
+	<uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
+	<uses-permission android:name="android.permission.WRITE_SYNC_SETTINGS"/>
 	<uses-permission
 			android:name="android.permission.SCHEDULE_EXACT_ALARM"
 			android:maxSdkVersion="32"/>
@@ -77,6 +79,17 @@
 				<data android:mimeType="text/vcard"/>
 				<data android:mimeType="text/x-vcard"/>
 			</intent-filter>
+			<!--Handler for "open" event for a ics file-->
+			<intent-filter>
+				<action android:name="android.intent.action.VIEW"/>
+
+				<category android:name="android.intent.category.DEFAULT"/>
+				<category android:name="android.intent.category.BROWSABLE"/>
+
+				<data android:scheme="file"/>
+				<data android:scheme="content"/>
+				<data android:mimeType="text/calendar"/>
+			</intent-filter>
 			<!--Handler for "mailto:" links-->
 			<intent-filter>
 				<action android:name="android.intent.action.SEND"/>
@@ -133,12 +146,13 @@
 				android:name=".push.PushNotificationService"
 				android:enabled="true"
 				android:exported="false"
+				android:foregroundServiceType="dataSync"
 				android:permission="android.permission.BIND_JOB_SERVICE"
 				android:process=":pushprocess"/>
 
 
 		<service
-				android:name=".credentials.AccountManagerAuthenticatorService"
+				android:name="de.tutao.tutashared.credentials.AccountManagerAuthenticatorService"
 				android:exported="false">
 			<intent-filter>
 				<action android:name="android.accounts.AccountAuthenticator"/>
@@ -146,6 +160,18 @@
 			<meta-data
 					android:name="android.accounts.AccountAuthenticator"
 					android:resource="@xml/authenticator"/>
+		</service>
+
+		<service
+				android:name=".StubSyncService"
+				android:exported="false"
+				android:process=":sync">
+			<intent-filter>
+				<action android:name="android.content.SyncAdapter"/>
+			</intent-filter>
+			<meta-data
+					android:name="android.content.SyncAdapter"
+					android:resource="@xml/syncadapter"/>
 		</service>
 
 

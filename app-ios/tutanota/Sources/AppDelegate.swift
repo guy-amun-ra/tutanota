@@ -1,3 +1,4 @@
+import StoreKit
 import TutanotaSharedFramework
 import UIKit
 
@@ -30,6 +31,8 @@ import UIKit
 	}
 
 	fileprivate func start() {
+		spawnTransactionFinisher()
+
 		let userPreferencesProvider = UserPreferencesProviderImpl()
 		let notificationStorage = NotificationStorage(userPreferencesProvider: userPreferencesProvider)
 		let keychainManager = KeychainManager(keyGenerator: KeyGenerator())
@@ -53,7 +56,7 @@ import UIKit
 		)
 
 		self.viewController = ViewController(
-			crypto: IosNativeCryptoFacade(),
+			crypto: TutanotaSharedFramework.IosNativeCryptoFacade(),
 			themeManager: ThemeManager(userProferencesProvider: userPreferencesProvider),
 			keychainManager: keychainManager,
 			notificationStorage: notificationStorage,
@@ -72,6 +75,9 @@ import UIKit
 	}
 
 	func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+		#if DEBUG
+			if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil { return true }
+		#endif
 		TUTSLog("Start Tutanota with launch options: \(String(describing: launchOptions))")
 		try! migrateToSharedstorage()
 		self.start()
@@ -111,7 +117,6 @@ import UIKit
 		fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
 	) {
 		let apsDict = userInfo["aps"] as! [String: Any]
-		TUTSLog("Received notification \(userInfo)")
 
 		let contentAvailable = apsDict["content-available"]
 		if contentAvailable as? Int == 1 {
@@ -125,6 +130,23 @@ import UIKit
 		}
 	}
 
+	func userNotificationCenter(
+		_ center: UNUserNotificationCenter,
+		didReceive response: UNNotificationResponse,
+		withCompletionHandler completionHandler: @escaping () -> Void
+	) {
+		if response.actionIdentifier == UNNotificationDefaultActionIdentifier {
+			let notification = response.notification
+			let userInfo = notification.request.content.userInfo
+			guard let userId = userInfo["userId"] as? String else { return }
+			guard let mailIdArray = userInfo["mailId"] as? [String], mailIdArray.count == 2 else { return }
+			let mailId = (mailIdArray[0], mailIdArray[1])
+			let address = userInfo["firstRecipient"] as? String ?? ""
+			self.viewController.handleOpenNotification(userId: userId, address: address, mailId: mailId)
+		}
+		completionHandler()
+	}
+
 	func applicationDidEnterBackground(_ application: UIApplication) {
 		self.viewController.onApplicationDidEnterBackground()
 
@@ -133,6 +155,18 @@ import UIKit
 	func applicationWillTerminate(_ application: UIApplication) {
 		self.viewController.onApplicationWillTerminate()
 		do { try FileUtils.deleteSharedStorage() } catch { TUTSLog("failed to delete shared storage on shutdown: \(error)") }
+	}
+
+	// everything is handled on the server. nothing to do here (should run infinitely in the background)
+	private func spawnTransactionFinisher() {
+		Task.detached {
+			for await result in Transaction.updates {
+				let transaction = IosMobilePaymentsFacade.checkVerified(result)
+				await transaction.finish()
+				TUTSLog("finished transaction \(transaction.id)")
+			}
+			TUTSLog("unclogged all transactions 🪠")
+		}
 	}
 }
 

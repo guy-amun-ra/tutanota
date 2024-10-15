@@ -3,6 +3,7 @@ import RegexBuilder
 import UIKit
 
 public let TUTANOTA_SHARE_SCHEME = "tutashare"
+public let CALENDAR_SHARE_SCHEME = "tutacalshare"
 
 /// this gets shared to the main app and contains all the info
 /// to create a new mail & the cleanup
@@ -52,10 +53,6 @@ public enum SharedItem {
 /// note that these are mentioned explicitly in the info.plist of the extension
 @MainActor public func loadSharedItemWith(ident: String, fromAttachment: NSItemProvider) async -> SharedItem? {
 	switch ident {
-	case "public.png", "public.jpeg", "public.tiff",  // shared from photos
-		"public.file-url"  // shared from files
-		:
-		return await load(item: fromAttachment, ident: ident, andConvertWith: codingToUrl)
 	case "public.image"  // shared from e.g. Signal, no URL but image data
 	: return await load(item: fromAttachment, ident: ident, andConvertWith: codingToImage)
 	case "public.url",  // shared image from safari, shared link, shared pdf...
@@ -64,7 +61,7 @@ public enum SharedItem {
 		return await load(item: fromAttachment, ident: ident, andConvertWith: codingToText)
 	case "public.vcard"  // shared from contacts
 	: return await load(item: fromAttachment, ident: ident, andConvertWith: codingToVCard)
-	default: return nil
+	default: return await load(item: fromAttachment, ident: ident, andConvertWith: codingToUrl)
 	}
 }
 
@@ -155,7 +152,6 @@ public func writeSharingInfo(info: SharingInfo, infoLocation: String) throws {
 public func readSharingInfo(infoLocation: String) -> SharingInfo? {
 	guard let defaults = try? getSharedDefaults() else { return nil }
 	defer { defaults.removeObject(forKey: infoLocation) }
-
 	guard let data: Data = defaults.value(forKey: infoLocation) as! Data? else {
 		TUTSLog("there are no sharingInfos to be found at \(infoLocation)")
 		return nil
@@ -216,12 +212,12 @@ private func codingToText(_ ident: String, _ coding: NSSecureCoding) -> SharedIt
 }
 
 private func codingToVCard(_ ident: String, _ coding: NSSecureCoding) -> SharedItem? {
-	guard let vcardText = coding as? Data else {
+	guard let vcardData = coding as? Data, let vcardString = String(data: vcardData, encoding: .utf8) else {
 		TUTSLog("could not convert vcard to data: \(String(describing: coding))")
 		return nil
 	}
 
-	return .contact(ident: ident, content: String(decoding: vcardText, as: UTF8.self))
+	return .contact(ident: ident, content: vcardString)
 }
 
 public func getAppGroupName() -> String {

@@ -18,7 +18,7 @@ class ViewController: UIViewController, WKNavigationDelegate, UIScrollViewDelega
 	private var isDarkTheme = false
 
 	init(
-		crypto: IosNativeCryptoFacade,
+		crypto: TutanotaSharedFramework.IosNativeCryptoFacade,
 		themeManager: ThemeManager,
 		keychainManager: KeychainManager,
 		notificationStorage: NotificationStorage,
@@ -73,7 +73,8 @@ class ViewController: UIViewController, WKNavigationDelegate, UIScrollViewDelega
 			webAuthnFacade: IosWebauthnFacade(viewController: self),
 			sqlCipherFacade: self.sqlCipherFacade,
 			contactsSynchronization: contactsSynchronization,
-			userPreferencesProvider: userPreferencesProvider
+			userPreferencesProvider: userPreferencesProvider,
+			externalCalendarFacade: ExternalCalendarFacadeImpl()
 		)
 
 	}
@@ -189,7 +190,7 @@ class ViewController: UIViewController, WKNavigationDelegate, UIScrollViewDelega
 		webView.load(URLRequest(url: url))
 	}
 
-	private func dictToJson(dictionary: [String: String]) -> String { try! String(decoding: JSONEncoder().encode(dictionary), as: UTF8.self) }
+	private func dictToJson(dictionary: [String: String]) -> String { try! String(data: JSONEncoder().encode(dictionary), encoding: .utf8)! }
 
 	private func appUrl() -> URL {
 		// this var is stored in Info.plist and possibly manipulated by the build schemes:
@@ -232,6 +233,20 @@ class ViewController: UIViewController, WKNavigationDelegate, UIScrollViewDelega
 		do { try await self.bridge.commonNativeFacade.createMailEditor(info.fileUrls.map { $0.path }, info.text, [], "", "") } catch {
 			TUTSLog("failed to open mail editor to share: \(error)")
 			try FileUtils.deleteSharedStorage(subDir: info.identifier)
+		}
+	}
+
+	func handleOpenNotification(userId: String, address: String, mailId: (String, String)) {
+		// Will be formatted as "<domain>/mail<requestedPath>" in TypeScript code
+		//
+		// requestedPath is /listId/elementId
+		let mailid = "\(mailId.0),\(mailId.1)"
+		let requestedPath = "?mail=\(mailid.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!)"
+
+		Task(priority: .userInitiated) {
+			do { try await self.bridge.commonNativeFacade.openMailBox(userId, address, requestedPath) } catch {
+				TUTSLog("Failed to open mail: \(requestedPath) from notification: \(error)")
+			}
 		}
 	}
 

@@ -62,7 +62,6 @@ export async function buildDesktop({ dirname, version, platform, architecture, u
 		notarize,
 		unpacked,
 		sign: (process.env.DEBUG_SIGN && updateUrl !== "") || !!process.env.JENKINS_HOME,
-		linux: platform === "linux",
 		architecture,
 	})
 	console.log("updateUrl is", updateUrl)
@@ -93,6 +92,7 @@ export async function buildDesktop({ dirname, version, platform, architecture, u
 
 	// package for linux, win, mac
 	await electronBuilder.build({
+		// @ts-ignore this is the argument to the cli but it's not in ts types?
 		_: ["build"],
 		win: platform === "win32" ? [] : undefined,
 		mac: platform === "darwin" ? [] : undefined,
@@ -118,7 +118,7 @@ export async function buildDesktop({ dirname, version, platform, architecture, u
 async function rollupDesktop(dirname, outDir, version, platform, architecture, disableMinify) {
 	platform = getCanonicalPlatformName(platform)
 	const mainBundle = await rollup({
-		input: [path.join(dirname, "src/desktop/DesktopMain.ts"), path.join(dirname, "src/desktop/sqlworker.ts")],
+		input: [path.join(dirname, "src/common/desktop/DesktopMain.ts"), path.join(dirname, "src/common/desktop/sqlworker.ts")],
 		// some transitive dep of a transitive dev-dep requires https://www.npmjs.com/package/url
 		// which rollup for some reason won't distinguish from the node builtin.
 		external: ["url", "util", "path", "fs", "os", "http", "https", "crypto", "child_process", "electron"],
@@ -153,8 +153,8 @@ async function rollupDesktop(dirname, outDir, version, platform, architecture, d
 		],
 	})
 	await mainBundle.write({ sourcemap: true, format: "commonjs", dir: outDir })
-	await fs.promises.copyFile(path.join(dirname, "src/desktop/preload.js"), path.join(outDir, "preload.js"))
-	await fs.promises.copyFile(path.join(dirname, "src/desktop/preload-webdialog.js"), path.join(outDir, "preload-webdialog.js"))
+	await fs.promises.copyFile(path.join(dirname, "src/common/desktop/preload.js"), path.join(outDir, "preload.js"))
+	await fs.promises.copyFile(path.join(dirname, "src/common/desktop/preload-webdialog.js"), path.join(outDir, "preload-webdialog.js"))
 }
 
 /**
@@ -199,16 +199,16 @@ async function downloadLatestMapirs(dllName, dllTrg) {
 		console.log("latest mapirs release", res.url)
 		const asset_id = res.data.assets.find((a) => a.name.startsWith(dllName)).id
 		console.log("Downloading mapirs asset", asset_id)
-		const asset = await octokit.repos.getReleaseAsset(
-			Object.assign(opts, {
-				asset_id,
-				headers: {
-					Accept: "application/octet-stream",
-				},
-			}),
-		)
+		const assetResponse = await octokit.repos.getReleaseAsset({
+			...opts,
+			asset_id,
+			headers: {
+				Accept: "application/octet-stream",
+			},
+		})
 		console.log("Writing mapirs asset")
-		await fs.promises.writeFile(dllTrg, Buffer.from(asset.data))
+		// @ts-ignore not clear how to check for response status so that ts is happy
+		await fs.promises.writeFile(dllTrg, Buffer.from(assetResponse.data))
 		console.log("Mapirs downloaded")
 	} catch (e) {
 		console.error("Failed to download mapirs!", e)

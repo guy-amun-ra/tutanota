@@ -6,6 +6,7 @@ import "./api/common/utils/LoggerTest.js"
 import "./api/common/utils/BirthdayUtilsTest.js"
 import "./api/worker/rest/EntityRestClientTest.js"
 import "./api/worker/crypto/CryptoFacadeTest.js"
+import "./api/worker/crypto/AsymmetricCryptoFacadeTest.js"
 import "./api/worker/crypto/InstanceMapperTest.js"
 import "./api/worker/crypto/OwnerEncSessionKeysUpdateQueueTest.js"
 import "./api/worker/crypto/CompatibilityTest.js"
@@ -26,6 +27,7 @@ import "./api/worker/search/SearchIndexEncodingTest.js"
 import "./serviceworker/SwTest.js"
 import "./api/worker/search/EventQueueTest.js"
 import "./api/worker/facades/MailFacadeTest.js"
+import "./api/worker/facades/GroupManagementFacadeTest.js"
 import "./api/worker/facades/PQMessageTest.js"
 import "./api/worker/facades/PQFacadeTest.js"
 import "./api/worker/facades/CalendarFacadeTest.js"
@@ -121,6 +123,7 @@ import "./api/worker/facades/RsaPqPerformanceTest.js"
 import "./api/worker/pdf/DeflaterTest.js"
 import "./api/worker/pdf/PdfWriterTest.js"
 import "./api/worker/pdf/PdfObjectTest.js"
+import "./api/worker/pdf/PdfDocumentTest.js"
 import "./api/worker/invoicegen/PdfInvoiceGeneratorTest.js"
 import "./subscription/SignupFormTest.js"
 import "./api/worker/facades/ContactFacadeTest.js"
@@ -131,7 +134,7 @@ import "./api/worker/facades/KeyCacheTest.js"
 
 import * as td from "testdouble"
 import { random } from "@tutao/tutanota-crypto"
-import { Mode } from "../../src/api/common/Env.js"
+import { Mode } from "../../src/common/api/common/Env.js"
 
 export async function run({ integration, filter }: { integration?: boolean; filter?: string } = {}) {
 	await setupSuite({ integration })
@@ -143,7 +146,7 @@ export async function run({ integration, filter }: { integration?: boolean; filt
 }
 
 async function setupSuite({ integration }: { integration?: boolean }) {
-	const { WorkerImpl } = await import("../../src/api/worker/WorkerImpl.js")
+	const { WorkerImpl } = await import("../../src/mail-app/workerUtils/worker/WorkerImpl.js")
 	globalThis.testWorker = WorkerImpl
 
 	if (typeof process != "undefined") {

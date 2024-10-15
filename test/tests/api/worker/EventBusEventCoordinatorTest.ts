@@ -1,24 +1,26 @@
 import o from "@tutao/otest"
-import { EventBusEventCoordinator } from "../../../../src/api/worker/EventBusEventCoordinator.js"
-import { object, verify, when } from "testdouble"
+import { EventBusEventCoordinator } from "../../../../src/common/api/worker/EventBusEventCoordinator.js"
+import { matchers, object, verify, when } from "testdouble"
 import {
 	EntityUpdate,
 	EntityUpdateTypeRef,
+	GroupKeyUpdateTypeRef,
 	GroupMembershipTypeRef,
 	User,
 	UserGroupKeyDistributionTypeRef,
 	UserTypeRef,
 	WebsocketLeaderStatusTypeRef,
-} from "../../../../src/api/entities/sys/TypeRefs.js"
+} from "../../../../src/common/api/entities/sys/TypeRefs.js"
 import { createTestEntity } from "../../TestUtils.js"
-import { OperationType } from "../../../../src/api/common/TutanotaConstants.js"
-
-import { UserFacade } from "../../../../src/api/worker/facades/UserFacade.js"
-import { EntityClient } from "../../../../src/api/common/EntityClient.js"
+import { AccountType, OperationType } from "../../../../src/common/api/common/TutanotaConstants.js"
+import { UserFacade } from "../../../../src/common/api/worker/facades/UserFacade.js"
+import { EntityClient } from "../../../../src/common/api/common/EntityClient.js"
 import { lazyAsync, lazyMemoized } from "@tutao/tutanota-utils"
-import { MailFacade } from "../../../../src/api/worker/facades/lazy/MailFacade.js"
-import { EventController } from "../../../../src/api/main/EventController.js"
-import { KeyRotationFacade } from "../../../../src/api/worker/facades/KeyRotationFacade.js"
+import { MailFacade } from "../../../../src/common/api/worker/facades/lazy/MailFacade.js"
+import { EventController } from "../../../../src/common/api/main/EventController.js"
+import { KeyRotationFacade } from "../../../../src/common/api/worker/facades/KeyRotationFacade.js"
+import { CacheManagementFacade } from "../../../../src/common/api/worker/facades/lazy/CacheManagementFacade.js"
+import { QueuedBatch } from "../../../../src/common/api/worker/EventQueue.js"
 
 o.spec("EventBusEventCoordinatorTest", () => {
 	let eventBusEventCoordinator: EventBusEventCoordinator
@@ -31,6 +33,7 @@ o.spec("EventBusEventCoordinatorTest", () => {
 	let mailFacade: MailFacade
 	let eventController: EventController
 	let keyRotationFacadeMock: KeyRotationFacade
+	let cacheManagementFacade: CacheManagementFacade
 
 	o.beforeEach(function () {
 		user = createTestEntity(UserTypeRef, { userGroup: createTestEntity(GroupMembershipTypeRef, { group: userGroupId }), _id: userId })
@@ -44,16 +47,18 @@ o.spec("EventBusEventCoordinatorTest", () => {
 		let lazyMailFacade: lazyAsync<MailFacade> = lazyMemoized(async () => mailFacade)
 		eventController = object()
 		keyRotationFacadeMock = object()
+		cacheManagementFacade = object()
 		eventBusEventCoordinator = new EventBusEventCoordinator(
 			object(),
-			object(),
 			lazyMailFacade,
-			object(),
 			userFacade,
 			entityClient,
 			eventController,
 			object(),
 			keyRotationFacadeMock,
+			async () => cacheManagementFacade,
+			async (error: Error) => {},
+			(queuedBatch: QueuedBatch[]) => {},
 		)
 	})
 
@@ -76,7 +81,7 @@ o.spec("EventBusEventCoordinatorTest", () => {
 		await eventBusEventCoordinator.onEntityEventsReceived(updates, "batchId", "groupId")
 
 		verify(userFacade.updateUser(user))
-		verify(userFacade.updateUserGroupKey(userGroupKeyDistribution))
+		verify(cacheManagementFacade.tryUpdatingUserGroupKey())
 		verify(eventController.onEntityUpdateReceived(updates, "groupId"))
 		verify(mailFacade.entityEventsReceived(updates))
 	})
@@ -94,7 +99,29 @@ o.spec("EventBusEventCoordinatorTest", () => {
 		await eventBusEventCoordinator.onEntityEventsReceived(updates, "batchId", "groupId")
 
 		verify(userFacade.updateUser(user))
-		verify(userFacade.updateUserGroupKey(userGroupKeyDistribution), { times: 0 })
+		verify(cacheManagementFacade.tryUpdatingUserGroupKey(), { times: 0 })
+		verify(eventController.onEntityUpdateReceived(updates, "groupId"))
+		verify(mailFacade.entityEventsReceived(updates))
+	})
+
+	o("groupKeyUpdate", async function () {
+		const instanceListId = "updateListId"
+		const instanceId = "updateElementId"
+		const updates: Array<EntityUpdate> = [
+			createTestEntity(EntityUpdateTypeRef, {
+				application: GroupKeyUpdateTypeRef.app,
+				type: GroupKeyUpdateTypeRef.type,
+				instanceListId,
+				instanceId,
+				operation: OperationType.CREATE,
+			}),
+		]
+
+		await eventBusEventCoordinator.onEntityEventsReceived(updates, "batchId", "groupId")
+
+		verify(keyRotationFacadeMock.updateGroupMemberships([[instanceListId, instanceId]]))
+		verify(userFacade.updateUser(user), { times: 0 })
+		verify(cacheManagementFacade.tryUpdatingUserGroupKey(), { times: 0 })
 		verify(eventController.onEntityUpdateReceived(updates, "groupId"))
 		verify(mailFacade.entityEventsReceived(updates))
 	})
@@ -107,15 +134,27 @@ o.spec("EventBusEventCoordinatorTest", () => {
 			eventBusEventCoordinator.onLeaderStatusChanged(leaderStatus)
 
 			verify(keyRotationFacadeMock.reset())
+			verify(keyRotationFacadeMock.processPendingKeyRotationsAndUpdates(matchers.anything()), { times: 0 })
 		})
 
-		o("If we are the leader client, execute key rotations", function () {
+		o("If we are the leader client of an internal user, execute key rotations", function () {
 			env.mode = "Desktop"
 			const leaderStatus = createTestEntity(WebsocketLeaderStatusTypeRef, { leaderStatus: true })
 
 			eventBusEventCoordinator.onLeaderStatusChanged(leaderStatus)
 
-			verify(keyRotationFacadeMock.loadAndProcessPendingKeyRotations(user))
+			verify(keyRotationFacadeMock.processPendingKeyRotationsAndUpdates(user))
+		})
+
+		o("If we are the leader client of an external user, delete the passphrase key", function () {
+			env.mode = "Desktop"
+			const leaderStatus = createTestEntity(WebsocketLeaderStatusTypeRef, { leaderStatus: true })
+			user.accountType = AccountType.EXTERNAL
+
+			eventBusEventCoordinator.onLeaderStatusChanged(leaderStatus)
+
+			verify(keyRotationFacadeMock.reset())
+			verify(keyRotationFacadeMock.processPendingKeyRotationsAndUpdates(matchers.anything()), { times: 0 })
 		})
 	})
 })

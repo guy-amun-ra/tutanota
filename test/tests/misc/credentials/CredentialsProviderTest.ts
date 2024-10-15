@@ -1,23 +1,27 @@
 import o from "@tutao/otest"
-import { CredentialsProvider } from "../../../../src/misc/credentials/CredentialsProvider.js"
+import { CredentialsProvider } from "../../../../src/common/misc/credentials/CredentialsProvider.js"
 import { assertNotNull, stringToUtf8Uint8Array } from "@tutao/tutanota-utils"
-import { CredentialEncryptionMode } from "../../../../src/misc/credentials/CredentialEncryptionMode.js"
+import { CredentialEncryptionMode } from "../../../../src/common/misc/credentials/CredentialEncryptionMode.js"
 import { object, when } from "testdouble"
 import { verify } from "@tutao/tutanota-test-utils"
-import { InterWindowEventFacadeSendDispatcher } from "../../../../src/native/common/generatedipc/InterWindowEventFacadeSendDispatcher.js"
-import { SqlCipherFacade } from "../../../../src/native/common/generatedipc/SqlCipherFacade.js"
-import { PersistedCredentials } from "../../../../src/native/common/generatedipc/PersistedCredentials.js"
-import { UnencryptedCredentials } from "../../../../src/native/common/generatedipc/UnencryptedCredentials.js"
-import { CredentialType } from "../../../../src/misc/credentials/CredentialType.js"
-import { NativeCredentialsFacade } from "../../../../src/native/common/generatedipc/NativeCredentialsFacade.js"
-import { CredentialsInfo } from "../../../../src/native/common/generatedipc/CredentialsInfo.js"
+import { InterWindowEventFacadeSendDispatcher } from "../../../../src/common/native/common/generatedipc/InterWindowEventFacadeSendDispatcher.js"
+import { SqlCipherFacade } from "../../../../src/common/native/common/generatedipc/SqlCipherFacade.js"
+import { PersistedCredentials } from "../../../../src/common/native/common/generatedipc/PersistedCredentials.js"
+import { UnencryptedCredentials } from "../../../../src/common/native/common/generatedipc/UnencryptedCredentials.js"
+import { CredentialType } from "../../../../src/common/misc/credentials/CredentialType.js"
+import { NativeCredentialsFacade } from "../../../../src/common/native/common/generatedipc/NativeCredentialsFacade.js"
+import { CredentialsInfo } from "../../../../src/common/native/common/generatedipc/CredentialsInfo.js"
 
 o.spec("CredentialsProvider", function () {
 	let credentialsProvider: CredentialsProvider
 	let internalCredentials: UnencryptedCredentials
 	let internalCredentials2: UnencryptedCredentials
+	let internalCredentialsBob: UnencryptedCredentials
+	let internalCredentialsAlice: UnencryptedCredentials
 	let externalCredentials: UnencryptedCredentials
 	let encryptedInternalCredentials: PersistedCredentials
+	let encryptedInternalCredentialsBob: PersistedCredentials
+	let encryptedInternalCredentialsAlice: PersistedCredentials
 	let encryptedExternalCredentials: PersistedCredentials
 	let encryptedInternalCredentialsWithoutDatabaseKey: Omit<PersistedCredentials, "databaseKey">
 	let sqlCipherFacadeMock: SqlCipherFacade
@@ -31,6 +35,7 @@ o.spec("CredentialsProvider", function () {
 				type: CredentialType.Internal,
 			},
 			encryptedPassword: "123",
+			encryptedPassphraseKey: null,
 			accessToken: "456",
 			databaseKey: null,
 		}
@@ -41,6 +46,29 @@ o.spec("CredentialsProvider", function () {
 				type: CredentialType.Internal,
 			},
 			encryptedPassword: "123456",
+			encryptedPassphraseKey: null,
+			accessToken: "456789",
+			databaseKey: null,
+		}
+		internalCredentialsAlice = {
+			credentialInfo: {
+				login: "alice@example.com",
+				userId: "789012",
+				type: CredentialType.Internal,
+			},
+			encryptedPassword: "123456",
+			encryptedPassphraseKey: null,
+			accessToken: "456789",
+			databaseKey: null,
+		}
+		internalCredentialsBob = {
+			credentialInfo: {
+				login: "bob@example.com",
+				userId: "789012",
+				type: CredentialType.Internal,
+			},
+			encryptedPassword: "123456",
+			encryptedPassphraseKey: null,
 			accessToken: "456789",
 			databaseKey: null,
 		}
@@ -51,6 +79,7 @@ o.spec("CredentialsProvider", function () {
 				type: CredentialType.External,
 			},
 			encryptedPassword: "1232",
+			encryptedPassphraseKey: null,
 			accessToken: "4562",
 			databaseKey: null,
 		}
@@ -61,7 +90,30 @@ o.spec("CredentialsProvider", function () {
 				type: internalCredentials.credentialInfo.type,
 			},
 			encryptedPassword: assertNotNull(internalCredentials.encryptedPassword),
+			encryptedPassphraseKey: null,
 			accessToken: stringToUtf8Uint8Array(internalCredentials.accessToken),
+			databaseKey: new Uint8Array([1, 2, 3]),
+		}
+		encryptedInternalCredentialsAlice = {
+			credentialInfo: {
+				login: internalCredentialsAlice.credentialInfo.login,
+				userId: internalCredentialsAlice.credentialInfo.userId,
+				type: internalCredentialsAlice.credentialInfo.type,
+			},
+			encryptedPassword: assertNotNull(internalCredentialsAlice.encryptedPassword),
+			encryptedPassphraseKey: null,
+			accessToken: stringToUtf8Uint8Array(internalCredentialsAlice.accessToken),
+			databaseKey: new Uint8Array([1, 2, 3]),
+		}
+		encryptedInternalCredentialsBob = {
+			credentialInfo: {
+				login: internalCredentialsBob.credentialInfo.login,
+				userId: internalCredentialsBob.credentialInfo.userId,
+				type: internalCredentialsBob.credentialInfo.type,
+			},
+			encryptedPassword: assertNotNull(internalCredentialsBob.encryptedPassword),
+			encryptedPassphraseKey: null,
+			accessToken: stringToUtf8Uint8Array(internalCredentialsBob.accessToken),
 			databaseKey: new Uint8Array([1, 2, 3]),
 		}
 		encryptedExternalCredentials = {
@@ -71,6 +123,7 @@ o.spec("CredentialsProvider", function () {
 				type: externalCredentials.credentialInfo.type,
 			},
 			encryptedPassword: assertNotNull(externalCredentials.encryptedPassword),
+			encryptedPassphraseKey: null,
 			accessToken: stringToUtf8Uint8Array(externalCredentials.accessToken),
 			databaseKey: new Uint8Array([1, 2, 3]),
 		}
@@ -81,6 +134,7 @@ o.spec("CredentialsProvider", function () {
 				type: internalCredentials.credentialInfo.type,
 			},
 			encryptedPassword: assertNotNull(internalCredentials2.encryptedPassword),
+			encryptedPassphraseKey: null,
 			accessToken: stringToUtf8Uint8Array(internalCredentials2.accessToken),
 		}
 		sqlCipherFacadeMock = object()
@@ -112,6 +166,26 @@ o.spec("CredentialsProvider", function () {
 			const retrievedCredentials = await credentialsProvider.getInternalCredentialsInfos()
 
 			o(retrievedCredentials).deepEquals([encryptedInternalCredentials.credentialInfo])
+		})
+
+		o("Should return sorted internal credentials regardless of internal ordering", async function () {
+			const alice = encryptedInternalCredentialsAlice
+			const bob = encryptedInternalCredentialsBob
+			const test = encryptedInternalCredentials
+			const sorted = [alice.credentialInfo, bob.credentialInfo, test.credentialInfo]
+
+			async function testSorted(list: readonly PersistedCredentials[]) {
+				when(nativeCredentialFacadeMock.loadAll()).thenResolve(list)
+				const retrieved = await credentialsProvider.getInternalCredentialsInfos()
+				o(retrieved).deepEquals(sorted)
+			}
+
+			await testSorted([alice, bob, test])
+			await testSorted([alice, test, bob])
+			await testSorted([bob, alice, test])
+			await testSorted([bob, test, alice])
+			await testSorted([test, alice, bob])
+			await testSorted([test, bob, alice])
 		})
 	})
 
@@ -174,14 +248,16 @@ o.spec("CredentialsProvider", function () {
 			accessToken: stringToUtf8Uint8Array("accessToken"),
 			databaseKey: new Uint8Array([1, 2, 3]),
 			encryptedPassword: "old encrypted password",
+			encryptedPassphraseKey: null,
 		}
 		const newEncryptedPassword = "uhagre2"
+		const newEncryptedPassphraseKey = new Uint8Array([0x0, 0x0e, 0x9])
 		o.beforeEach(function () {
 			when(nativeCredentialFacadeMock.loadAll()).thenResolve([persistentCredentials])
 		})
 
 		o("replace only", async function () {
-			await credentialsProvider.replacePassword(credentials, newEncryptedPassword)
+			await credentialsProvider.replacePassword(credentials, newEncryptedPassword, newEncryptedPassphraseKey)
 
 			verify(
 				nativeCredentialFacadeMock.storeEncrypted({
@@ -189,6 +265,7 @@ o.spec("CredentialsProvider", function () {
 					accessToken: stringToUtf8Uint8Array("accessToken"),
 					databaseKey: new Uint8Array([1, 2, 3]),
 					encryptedPassword: newEncryptedPassword,
+					encryptedPassphraseKey: newEncryptedPassphraseKey,
 				}),
 			)
 		})

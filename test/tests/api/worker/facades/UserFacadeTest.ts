@@ -1,7 +1,7 @@
 import o from "@tutao/otest"
-import { UserFacade } from "../../../../../src/api/worker/facades/UserFacade.js"
-import { User, UserGroupKeyDistributionTypeRef } from "../../../../../src/api/entities/sys/TypeRefs.js"
-import { KeyCache } from "../../../../../src/api/worker/facades/KeyCache.js"
+import { UserFacade } from "../../../../../src/common/api/worker/facades/UserFacade.js"
+import { User, UserGroupKeyDistributionTypeRef } from "../../../../../src/common/api/entities/sys/TypeRefs.js"
+import { KeyCache } from "../../../../../src/common/api/worker/facades/KeyCache.js"
 import { matchers, object, verify, when } from "testdouble"
 import { createTestEntity } from "../../../TestUtils.js"
 import { aes256RandomKey, encryptKey } from "@tutao/tutanota-crypto"
@@ -12,7 +12,7 @@ o.spec("UserFacadeTest", function () {
 
 	o.beforeEach(function () {
 		keyCache = object()
-		facade = new UserFacade(keyCache)
+		facade = new UserFacade(keyCache, object())
 	})
 
 	o("a fresh UserFacade doesn't think it's logged or partially logged in", function () {

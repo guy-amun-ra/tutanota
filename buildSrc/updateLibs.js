@@ -12,6 +12,10 @@ import commonjs from "@rollup/plugin-commonjs"
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
+export async function updateLibs() {
+	await copyToLibs(clientDependencies)
+}
+
 /*
  * Each entry is one of:
  *  - string: will be copied from specified to libs preserving the file name
@@ -22,25 +26,23 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
  */
 const clientDependencies = [
 	"../node_modules/systemjs/dist/s.js",
-	"../node_modules/mithril/mithril.js",
+	// mithril is patched manually to remove some unused parts
+	// "../node_modules/mithril/mithril.js",
 	"../node_modules/mithril/stream/stream.js",
-	"../node_modules/squire-rte/dist/squire-raw.mjs",
+	// squire is patched manually to fix issuesr
+	// "../node_modules/squire-rte/dist/squire-raw.mjs",
 	"../node_modules/dompurify/dist/purify.js",
 	{ src: "../node_modules/linkifyjs/dist/linkify.es.js", target: "linkify.js" },
 	{ src: "../node_modules/linkify-html/dist/linkify-html.es.js", target: "linkify-html.js" },
 	"../node_modules/luxon/build/es6/luxon.js",
 	{ src: "../node_modules/cborg/cborg.js", target: "cborg.js", rollup: true },
+	{ src: "../node_modules/qrcode-svg/lib/qrcode.js", target: "qrcode.js", rollup: true },
+	{ src: "../node_modules/jszip/dist/jszip.js", target: "jszip.js", rollup: true },
 	{ src: "../node_modules/electron-updater/out/main.js", target: "electron-updater.mjs", rollup: rollDesktopDep },
 	{ src: "../node_modules/better-sqlite3/lib/index.js", target: "better-sqlite3.mjs", rollup: rollDesktopDep },
 	{ src: "../node_modules/winreg/lib/registry.js", target: "winreg.mjs", rollup: rollDesktopDep },
 	{ src: "../node_modules/undici/index.js", target: "undici.mjs", rollup: rollDesktopDep },
 ]
-
-run()
-
-async function run() {
-	await copyToLibs(clientDependencies)
-}
 
 async function copyToLibs(files) {
 	for (let srcFile of files) {
@@ -102,6 +104,7 @@ async function rollDesktopDep(src, target) {
 		],
 		plugins: [
 			nodeResolve({ preferBuiltins: true }),
+			// @ts-ignore it's a weird default import/export issue
 			commonjs({
 				// better-sqlite3 uses dynamic require to load the binary.
 				// if there is ever another dependency that uses dynamic require

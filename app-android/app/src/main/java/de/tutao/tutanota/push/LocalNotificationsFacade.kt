@@ -1,5 +1,6 @@
 package de.tutao.tutanota.push
 
+import android.Manifest
 import android.annotation.TargetApi
 import android.app.DownloadManager
 import android.app.Notification
@@ -9,6 +10,7 @@ import android.app.PendingIntent
 import android.content.ClipData
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.media.AudioAttributes
 import android.media.RingtoneManager
@@ -19,6 +21,7 @@ import android.util.Log
 import androidx.annotation.ColorInt
 import androidx.annotation.RequiresApi
 import androidx.annotation.StringRes
+import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -27,9 +30,9 @@ import androidx.core.net.toUri
 import de.tutao.tutanota.BuildConfig
 import de.tutao.tutanota.MainActivity
 import de.tutao.tutanota.R
-import de.tutao.tutanota.atLeastNougat
 import de.tutao.tutanota.getMimeType
-import de.tutao.tutanota.ipc.ExtendedNotificationMode
+import de.tutao.tutashared.ipc.ExtendedNotificationMode
+import de.tutao.tutashared.push.SseStorage
 import java.io.File
 import java.security.SecureRandom
 import java.text.SimpleDateFormat
@@ -98,25 +101,39 @@ class LocalNotificationsFacade(private val context: Context, private val sseStor
 				.setColor(redColor)
 				.apply {
 					val genericTitle = context.getString(R.string.pushNewMail_msg)
-					when (notificationMode) {
-						ExtendedNotificationMode.NO_SENDER_OR_SUBJECT -> {
-							setContentTitle(genericTitle)
-						}
 
-						ExtendedNotificationMode.ONLY_SENDER, ExtendedNotificationMode.SENDER_AND_SUBJECT -> {
-							setContentTitle(metadata?.sender?.address ?: "")
-							setContentText(genericTitle)
+					if (metadata == null) {
+						setContentTitle(genericTitle)
+					} else {
+						val sender = metadata.sender.name.ifBlank { metadata.sender.address }
+
+						when (notificationMode) {
+							ExtendedNotificationMode.NO_SENDER_OR_SUBJECT -> {
+								setContentTitle(genericTitle)
+							}
+
+							ExtendedNotificationMode.ONLY_SENDER -> {
+								setContentTitle(sender)
+								setContentText(genericTitle)
+							}
+
+							ExtendedNotificationMode.SENDER_AND_SUBJECT -> {
+								val subject = metadata.subject
+								setContentTitle(sender)
+								setContentText(subject)
+							}
 						}
 					}
+
 				}
 				// header text, put recipient address in there
 				.setSubText(notificationInfo.mailAddress)
 				.setSmallIcon(R.drawable.ic_status)
 				.setDeleteIntent(intentForDelete(arrayListOf(notificationInfo.mailAddress)))
-				.setContentIntent(intentOpenMailbox(notificationInfo, false))
+				.setContentIntent(intentOpenMail(notificationInfo))
 				.setGroup(groupIdFor(notificationInfo))
 				.setAutoCancel(true)
-				.setGroupAlertBehavior(if (atLeastNougat()) NotificationCompat.GROUP_ALERT_CHILDREN else NotificationCompat.GROUP_ALERT_SUMMARY)
+				.setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
 				.setDefaults(Notification.DEFAULT_ALL)
 				.setExtras(Bundle().apply {
 					putString(EMAIL_ADDRESS_EXTRA, notificationInfo.mailAddress)
@@ -153,6 +170,13 @@ class LocalNotificationsFacade(private val context: Context, private val sseStor
 			.setSmallIcon(R.drawable.ic_download)
 			.setAutoCancel(true)
 			.build()
+		if (ActivityCompat.checkSelfPermission(
+				context,
+				Manifest.permission.POST_NOTIFICATIONS
+			) != PackageManager.PERMISSION_GRANTED
+		) {
+			return
+		}
 		notificationManager.notify(mailNotificationId("downloads"), notification)
 	}
 
@@ -174,7 +198,7 @@ class LocalNotificationsFacade(private val context: Context, private val sseStor
 			.setGroupSummary(true)
 			.setColor(red)
 			.setStyle(inboxStyle)
-			.setContentIntent(intentOpenMailbox(notificationInfo, true))
+			.setContentIntent(intentOpenMail(notificationInfo))
 			.setDeleteIntent(intentForDelete(addresses))
 			.setAutoCancel(true)
 			// We need to update summary without sound when one of the alarms is cancelled
@@ -182,7 +206,7 @@ class LocalNotificationsFacade(private val context: Context, private val sseStor
 			// work with sound there (perhaps summary consumes it somehow?) and we must do
 			// summary with sound instead on the old versions.
 			.setDefaults(NotificationCompat.DEFAULT_SOUND)
-			.setGroupAlertBehavior(if (atLeastNougat()) NotificationCompat.GROUP_ALERT_CHILDREN else NotificationCompat.GROUP_ALERT_SUMMARY)
+			.setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
 			.build()
 		notificationManager.notify(abs(SUMMARY_NOTIFICATION_ID + notificationInfo.userId.hashCode()), notification)
 	}
@@ -219,7 +243,6 @@ class LocalNotificationsFacade(private val context: Context, private val sseStor
 		notificationManager.notify(1000, notification)
 	}
 
-	@RequiresApi(Build.VERSION_CODES.O)
 	fun createNotificationChannels() {
 		val mailNotificationChannel = NotificationChannel(
 			EMAIL_NOTIFICATION_CHANNEL_ID,
@@ -250,7 +273,6 @@ class LocalNotificationsFacade(private val context: Context, private val sseStor
 		notificationManager.createNotificationChannel(downloadNotificationsChannel)
 	}
 
-	@RequiresApi(Build.VERSION_CODES.O)
 	private fun NotificationChannel.default(): NotificationChannel {
 		val ringtoneUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
 		val att = AudioAttributes.Builder()
@@ -281,9 +303,8 @@ class LocalNotificationsFacade(private val context: Context, private val sseStor
 		)
 	}
 
-	private fun intentOpenMailbox(
+	private fun intentOpenMail(
 		notificationInfo: NotificationInfo,
-		isSummary: Boolean,
 	): PendingIntent {
 		val openMailboxIntent = Intent(context, MainActivity::class.java)
 		openMailboxIntent.action = MainActivity.OPEN_USER_MAILBOX_ACTION
@@ -295,10 +316,15 @@ class LocalNotificationsFacade(private val context: Context, private val sseStor
 			MainActivity.OPEN_USER_MAILBOX_USERID_KEY,
 			notificationInfo.userId
 		)
-		openMailboxIntent.putExtra(MainActivity.IS_SUMMARY_EXTRA, isSummary)
+		if (notificationInfo.mailId != null) {
+			openMailboxIntent.putExtra(
+				MainActivity.OPEN_USER_MAILBOX_MAILID_KEY,
+				"${notificationInfo.mailId.listId}/${notificationInfo.mailId.listElementId}"
+			)
+		}
 		return PendingIntent.getActivity(
 			context.applicationContext,
-			mailNotificationId(notificationInfo.mailAddress + "@isSummary" + isSummary),
+			mailNotificationId(notificationInfo.mailAddress),
 			openMailboxIntent,
 			PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
 		)
@@ -309,12 +335,10 @@ fun notificationDismissedIntent(
 	context: Context,
 	emailAddresses: ArrayList<String>,
 	sender: String,
-	isSummary: Boolean,
 ): Intent {
 	val deleteIntent = Intent(context, PushNotificationService::class.java)
 	deleteIntent.putStringArrayListExtra(NOTIFICATION_DISMISSED_ADDR_EXTRA, emailAddresses)
 	deleteIntent.putExtra("sender", sender)
-	deleteIntent.putExtra(MainActivity.IS_SUMMARY_EXTRA, isSummary)
 	return deleteIntent
 }
 

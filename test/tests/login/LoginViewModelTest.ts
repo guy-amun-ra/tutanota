@@ -1,29 +1,29 @@
 import o from "@tutao/otest"
-import { DisplayMode, isLegacyDomain, LoginState, LoginViewModel } from "../../../src/login/LoginViewModel.js"
-import type { LoginController } from "../../../src/api/main/LoginController.js"
-import { GroupInfoTypeRef, UserTypeRef } from "../../../src/api/entities/sys/TypeRefs.js"
-import type { UserController } from "../../../src/api/main/UserController.js"
-import { KeyPermanentlyInvalidatedError } from "../../../src/api/common/error/KeyPermanentlyInvalidatedError.js"
-import { CredentialAuthenticationError } from "../../../src/api/common/error/CredentialAuthenticationError.js"
-import { Credentials, credentialsToUnencrypted } from "../../../src/misc/credentials/Credentials.js"
-import { SecondFactorHandler } from "../../../src/misc/2fa/SecondFactorHandler"
+import { DisplayMode, isLegacyDomain, LoginState, LoginViewModel } from "../../../src/common/login/LoginViewModel.js"
+import type { LoginController } from "../../../src/common/api/main/LoginController.js"
+import { GroupInfoTypeRef, UserTypeRef } from "../../../src/common/api/entities/sys/TypeRefs.js"
+import type { UserController } from "../../../src/common/api/main/UserController.js"
+import { KeyPermanentlyInvalidatedError } from "../../../src/common/api/common/error/KeyPermanentlyInvalidatedError.js"
+import { CredentialAuthenticationError } from "../../../src/common/api/common/error/CredentialAuthenticationError.js"
+import { Credentials, credentialsToUnencrypted } from "../../../src/common/misc/credentials/Credentials.js"
+import { SecondFactorHandler } from "../../../src/common/misc/2fa/SecondFactorHandler"
 import { assertThrows } from "@tutao/tutanota-test-utils"
-import { CredentialsProvider } from "../../../src/misc/credentials/CredentialsProvider.js"
-import { SessionType } from "../../../src/api/common/SessionType.js"
+import { CredentialsProvider } from "../../../src/common/misc/credentials/CredentialsProvider.js"
+import { SessionType } from "../../../src/common/api/common/SessionType.js"
 import { instance, matchers, object, replace, verify, when } from "testdouble"
-import { AccessExpiredError, NotAuthenticatedError } from "../../../src/api/common/error/RestError"
-import { DeviceConfig } from "../../../src/misc/DeviceConfig"
-import { ResumeSessionErrorReason } from "../../../src/api/worker/facades/LoginFacade"
-import { Mode } from "../../../src/api/common/Env.js"
+import { AccessExpiredError, NotAuthenticatedError } from "../../../src/common/api/common/error/RestError"
+import { DeviceConfig } from "../../../src/common/misc/DeviceConfig"
+import { ResumeSessionErrorReason } from "../../../src/common/api/worker/facades/LoginFacade"
+import { Mode } from "../../../src/common/api/common/Env.js"
 import { createTestEntity, domainConfigStub, textIncludes } from "../TestUtils.js"
-import { CredentialRemovalHandler } from "../../../src/login/CredentialRemovalHandler.js"
-import { NativePushServiceApp } from "../../../src/native/main/NativePushServiceApp.js"
-import { PersistedCredentials } from "../../../src/native/common/generatedipc/PersistedCredentials.js"
-import { CredentialType } from "../../../src/misc/credentials/CredentialType.js"
-import { UnencryptedCredentials } from "../../../src/native/common/generatedipc/UnencryptedCredentials.js"
+import { CredentialRemovalHandler } from "../../../src/common/login/CredentialRemovalHandler.js"
+import { NativePushServiceApp } from "../../../src/common/native/main/NativePushServiceApp.js"
+import { PersistedCredentials } from "../../../src/common/native/common/generatedipc/PersistedCredentials.js"
+import { CredentialType } from "../../../src/common/misc/credentials/CredentialType.js"
+import { UnencryptedCredentials } from "../../../src/common/native/common/generatedipc/UnencryptedCredentials.js"
 import { stringToUtf8Uint8Array, utf8Uint8ArrayToString } from "@tutao/tutanota-utils"
-import { AppLock } from "../../../src/login/AppLock.js"
-import { lang } from "../../../src/misc/LanguageViewModel.js"
+import { AppLock } from "../../../src/common/login/AppLock.js"
+import { lang } from "../../../src/common/misc/LanguageViewModel.js"
 
 const { anything } = matchers
 
@@ -57,6 +57,7 @@ function getCredentialsProviderStub(): CredentialsProvider {
 			},
 			accessToken: utf8Uint8ArrayToString(storedCredentials.accessToken),
 			encryptedPassword: storedCredentials.encryptedPassword,
+			encryptedPassphraseKey: storedCredentials.encryptedPassphraseKey,
 			databaseKey: storedCredentials.databaseKey,
 		}
 	}) satisfies CredentialsProvider["getDecryptedCredentialsByUserId"])
@@ -70,6 +71,7 @@ function getCredentialsProviderStub(): CredentialsProvider {
 			},
 			accessToken: stringToUtf8Uint8Array(credential.accessToken),
 			encryptedPassword: credential.encryptedPassword,
+			encryptedPassphraseKey: credential.encryptedPassphraseKey,
 			databaseKey: credential.databaseKey,
 		})
 	}) satisfies CredentialsProvider["store"])
@@ -99,6 +101,7 @@ o.spec("LoginViewModelTest", () => {
 			type: CredentialType.Internal,
 		},
 		encryptedPassword: "encryptedPassword",
+		encryptedPassphraseKey: null,
 		accessToken: stringToUtf8Uint8Array("accessToken"),
 		databaseKey: null,
 	} as const)
@@ -107,6 +110,7 @@ o.spec("LoginViewModelTest", () => {
 		userId: "user-id-1",
 		login: "test@example.com",
 		encryptedPassword: "encryptedPassword",
+		encryptedPassphraseKey: null,
 		accessToken: "accessToken",
 		type: CredentialType.Internal,
 	})
@@ -251,7 +255,7 @@ o.spec("LoginViewModelTest", () => {
 
 			await viewModel.deleteCredentials(encryptedTestCredentials.credentialInfo)
 
-			verify(credentialRemovalHandler.onCredentialsRemoved(credentialsAndKey))
+			verify(credentialRemovalHandler.onCredentialsRemoved(credentialsAndKey.credentialInfo))
 			verify(loginControllerMock.deleteOldSession(credentialsToUnencrypted(testCredentials, null), pushIdentifier))
 		})
 	})
@@ -296,7 +300,7 @@ o.spec("LoginViewModelTest", () => {
 			o(viewModel.state).equals(LoginState.InvalidCredentials)
 			o(viewModel.displayMode).equals(DisplayMode.Form)
 			verify(credentialsProviderMock.deleteByUserId(testCredentials.userId))
-			verify(credentialRemovalHandler.onCredentialsRemoved(credentialsAndKey))
+			verify(credentialRemovalHandler.onCredentialsRemoved(credentialsAndKey.credentialInfo))
 			o(viewModel.getSavedCredentials()).deepEquals([])
 			o(viewModel.autoLoginCredentials).equals(null)
 		})
@@ -353,6 +357,7 @@ o.spec("LoginViewModelTest", () => {
 		const credentialsWithoutPassword: Credentials = {
 			login: testCredentials.login,
 			encryptedPassword: null,
+			encryptedPassphraseKey: null,
 			accessToken: testCredentials.accessToken,
 			userId: testCredentials.userId,
 			type: CredentialType.Internal,
@@ -399,6 +404,7 @@ o.spec("LoginViewModelTest", () => {
 				},
 				encryptedPassword: "encPw",
 				accessToken: "oldAccessToken",
+				encryptedPassphraseKey: null,
 				databaseKey: null,
 			}
 			await credentialsProviderMock.store(oldCredentials)

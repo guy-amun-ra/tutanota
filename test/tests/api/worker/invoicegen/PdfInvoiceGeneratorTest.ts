@@ -1,8 +1,8 @@
 import o from "@tutao/otest"
-import { PdfWriter } from "../../../../../src/api/worker/pdf/PdfWriter.js"
+import { PdfWriter } from "../../../../../src/common/api/worker/pdf/PdfWriter.js"
 import { createTestEntity } from "../../../TestUtils.js"
-import { InvoiceDataGetOutTypeRef, InvoiceDataItemTypeRef } from "../../../../../src/api/entities/sys/TypeRefs.js"
-import { PdfInvoiceGenerator } from "../../../../../src/api/worker/invoicegen/PdfInvoiceGenerator.js"
+import { InvoiceDataGetOutTypeRef, InvoiceDataItemTypeRef } from "../../../../../src/common/api/entities/sys/TypeRefs.js"
+import { PdfInvoiceGenerator } from "../../../../../src/common/api/worker/invoicegen/PdfInvoiceGenerator.js"
 import { object, when } from "testdouble"
 
 async function fetchStub(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
@@ -25,13 +25,14 @@ o.spec("PdfInvoiceGenerator", function () {
 
 	o("Gen", async function () {
 		const invoiceData = createTestEntity(InvoiceDataGetOutTypeRef, {
-			address: "Altschauerberg 8\n91448 Emskirchen\nDeutschland",
-			country: "DE",
+			address: "竜宮レナ\n白川村\n日本国",
+			country: "JP",
 			items: dataMock(2),
 		})
 
 		const gen = new PdfInvoiceGenerator(pdfWriter, invoiceData, "1978197819801981931", "NiiNii")
 		const pdf = await gen.generate()
+		// fs.writeFileSync("/tmp/full_test.pdf", pdf, {flag:"w"})
 	})
 
 	o("Entries fit all on a single page but generate a new empty page", async function () {
@@ -42,6 +43,7 @@ o.spec("PdfInvoiceGenerator", function () {
 		})
 		const gen = new PdfInvoiceGenerator(pdfWriter, renderInvoice, "1978197819801981931", "NiiNii")
 		const pdf = await gen.generate()
+		// fs.writeFileSync("/tmp/normal_test.pdf", pdf, {flag:"w"})
 	})
 
 	o("VatId number is generated", async function () {

@@ -1,18 +1,19 @@
 package de.tutao.tutanota
 
-import de.tutao.tutanota.credentials.AndroidNativeCredentialsFacade
-import de.tutao.tutanota.credentials.CredentialEncryptionMode
-import de.tutao.tutanota.credentials.CredentialsDao
-import de.tutao.tutanota.credentials.KeychainEncryption
-import de.tutao.tutanota.credentials.PersistedCredentialsEntity
-import de.tutao.tutanota.data.AppDatabase
-import de.tutao.tutanota.data.KeyBinaryDao
-import de.tutao.tutanota.data.KeyValueDao
-import de.tutao.tutanota.ipc.CredentialType
-import de.tutao.tutanota.ipc.CredentialsInfo
-import de.tutao.tutanota.ipc.PersistedCredentials
-import de.tutao.tutanota.ipc.UnencryptedCredentials
-import de.tutao.tutanota.ipc.wrap
+import de.tutao.tutashared.AndroidNativeCryptoFacade
+import de.tutao.tutashared.CredentialType
+import de.tutao.tutashared.credentials.AndroidNativeCredentialsFacade
+import de.tutao.tutashared.credentials.CredentialEncryptionMode
+import de.tutao.tutashared.credentials.CredentialsDao
+import de.tutao.tutashared.credentials.KeychainEncryption
+import de.tutao.tutashared.credentials.PersistedCredentialsEntity
+import de.tutao.tutashared.data.AppDatabase
+import de.tutao.tutashared.data.KeyBinaryDao
+import de.tutao.tutashared.data.KeyValueDao
+import de.tutao.tutashared.ipc.CredentialsInfo
+import de.tutao.tutashared.ipc.PersistedCredentials
+import de.tutao.tutashared.ipc.UnencryptedCredentials
+import de.tutao.tutashared.ipc.wrap
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -54,7 +55,8 @@ class AndroidNativeCredentialFacadeTest {
 		),
 		encryptedPassword = "pw1",
 		databaseKey = byteArrayOf(0x01, 0x0d, 0x0e).wrap(),
-		accessToken = byteArrayOf(0x01, 0x0a, 0x0e).wrap()
+		accessToken = byteArrayOf(0x01, 0x0a, 0x0e).wrap(),
+		encryptedPassphraseKey = null,
 	)
 
 	val decryptedCredentials1 = UnencryptedCredentials(
@@ -66,6 +68,7 @@ class AndroidNativeCredentialFacadeTest {
 		encryptedPassword = "pw1",
 		databaseKey = byteArrayOf(0x01, 0x0d, 0x0d).wrap(),
 		accessToken = "decAccessToken1",
+		encryptedPassphraseKey = null,
 	)
 
 	val credentialsEntity1 = PersistedCredentialsEntity(
@@ -74,7 +77,8 @@ class AndroidNativeCredentialFacadeTest {
 		userId = encryptedCredentials1.credentialInfo.userId,
 		encryptedPassword = encryptedCredentials1.encryptedPassword,
 		databaseKey = encryptedCredentials1.databaseKey?.data,
-		accessToken = encryptedCredentials1.accessToken.data
+		accessToken = encryptedCredentials1.accessToken.data,
+		encryptedPassphraseKey = null,
 	)
 
 	val encryptedCredentials2 = PersistedCredentials(
@@ -85,7 +89,20 @@ class AndroidNativeCredentialFacadeTest {
 		),
 		encryptedPassword = "pw2",
 		databaseKey = byteArrayOf(0x02, 0x0d, 0x0e).wrap(),
-		accessToken = byteArrayOf(0x02, 0x0a, 0x0e).wrap()
+		accessToken = byteArrayOf(0x02, 0x0a, 0x0e).wrap(),
+		encryptedPassphraseKey = byteArrayOf(0x02, 0x0b, 0x0e).wrap(),
+	)
+
+	val decryptedCredentials2 = UnencryptedCredentials(
+		credentialInfo = CredentialsInfo(
+			login = "login2@test.com",
+			type = CredentialType.INTERNAL,
+			userId = "user2"
+		),
+		encryptedPassword = "pw2",
+		databaseKey = byteArrayOf(0x02, 0x0d, 0x0d).wrap(),
+		accessToken = "decAccessToken2",
+		encryptedPassphraseKey = byteArrayOf(0x02, 0x0b, 0x0e).wrap(),
 	)
 
 	val credentialsEntity2 = PersistedCredentialsEntity(
@@ -94,7 +111,8 @@ class AndroidNativeCredentialFacadeTest {
 		userId = encryptedCredentials2.credentialInfo.userId,
 		encryptedPassword = encryptedCredentials2.encryptedPassword,
 		databaseKey = encryptedCredentials2.databaseKey?.data,
-		accessToken = encryptedCredentials2.accessToken.data
+		accessToken = encryptedCredentials2.accessToken.data,
+		encryptedPassphraseKey = byteArrayOf(0x02, 0x0b, 0x0e),
 	)
 
 	val encCredentialsKey = byteArrayOf(0x0e)
@@ -137,7 +155,7 @@ class AndroidNativeCredentialFacadeTest {
 	}
 
 	@Test
-	fun `loadByUserId $ when there is a key it is used to decrypt credentials`() = runTest {
+	fun `loadByUserId $ when there is a key it is used to decrypt credentials, wo passphraseKey`() = runTest {
 		sayHadStoredEncryptionKey(encCredentialsKey)
 		sayHadStoredEncryptionMode(CredentialEncryptionMode.DEVICE_LOCK)
 		sayHadCredentials(listOf(credentialsEntity1, credentialsEntity2))
@@ -153,6 +171,25 @@ class AndroidNativeCredentialFacadeTest {
 			decryptedCredentials1.accessToken.toByteArray()
 		)
 		assertEquals(decryptedCredentials1, facade.loadByUserId("user1"))
+	}
+
+	@Test
+	fun `loadByUserId $ when there is a key it is used to decrypt credentials, w passphraseKey`() = runTest {
+		sayHadStoredEncryptionKey(encCredentialsKey)
+		sayHadStoredEncryptionMode(CredentialEncryptionMode.DEVICE_LOCK)
+		sayHadCredentials(listOf(credentialsEntity1, credentialsEntity2))
+		sayCredentialKeyCanBeDecrypted(CredentialEncryptionMode.DEVICE_LOCK)
+		sayCanDecrypt(
+			decCredentialsKey,
+			encryptedCredentials2.databaseKey!!.data,
+			decryptedCredentials2.databaseKey!!.data
+		)
+		sayCanDecrypt(
+			decCredentialsKey,
+			encryptedCredentials2.accessToken.data,
+			decryptedCredentials2.accessToken.toByteArray()
+		)
+		assertEquals(decryptedCredentials2, facade.loadByUserId("user2"))
 	}
 
 	@Test
@@ -219,8 +256,15 @@ class AndroidNativeCredentialFacadeTest {
 
 	@Test
 	fun `migrate stores everything`() = runTest {
-		facade.migrateToNativeCredentials(listOf(encryptedCredentials1, encryptedCredentials2), CredentialEncryptionMode.SYSTEM_PASSWORD, encCredentialsKey.wrap())
-		verify(keyValueDao).putString(AndroidNativeCredentialsFacade.CREDENTIALS_ENCRYPTION_MODE_KEY, CredentialEncryptionMode.SYSTEM_PASSWORD.name)
+		facade.migrateToNativeCredentials(
+			listOf(encryptedCredentials1, encryptedCredentials2),
+			CredentialEncryptionMode.SYSTEM_PASSWORD,
+			encCredentialsKey.wrap()
+		)
+		verify(keyValueDao).putString(
+			AndroidNativeCredentialsFacade.CREDENTIALS_ENCRYPTION_MODE_KEY,
+			CredentialEncryptionMode.SYSTEM_PASSWORD.name
+		)
 		verify(keyBinaryDao).put(AndroidNativeCredentialsFacade.CREDENTIALS_ENCRYPTION_KEY_KEY, encCredentialsKey)
 		verify(credentialsDao).insertPersistedCredentials(credentialsEntity1)
 		verify(credentialsDao).insertPersistedCredentials(credentialsEntity2)
@@ -291,7 +335,7 @@ class AndroidNativeCredentialFacadeTest {
 
 	private fun sayHadCredentials(credentials: List<PersistedCredentialsEntity>) {
 		credentialsDao.stub {
-			on { allPersistedCredentials } doReturn credentials
+			on { allPersistedCredentials() } doReturn credentials
 		}
 	}
 }

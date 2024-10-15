@@ -41,10 +41,10 @@ import {
 	utf8Uint8ArrayToString,
 } from "@tutao/tutanota-utils"
 import testData from "./CompatibilityTestData.json"
-import { uncompress } from "../../../../../src/api/worker/Compression.js"
+import { uncompress } from "../../../../../src/common/api/worker/Compression.js"
 import { matchers, object, when } from "testdouble"
-import { PQFacade } from "../../../../../src/api/worker/facades/PQFacade.js"
-import { WASMKyberFacade } from "../../../../../src/api/worker/facades/KyberFacade.js"
+import { PQFacade } from "../../../../../src/common/api/worker/facades/PQFacade.js"
+import { WASMKyberFacade } from "../../../../../src/common/api/worker/facades/KyberFacade.js"
 import { loadArgon2WASM, loadLibOQSWASM } from "../WASMTestUtils.js"
 
 const originalRandom = random.generateRandomData
@@ -309,11 +309,12 @@ o.spec("crypto compatibility", function () {
 			const pqKeyPairs: PQKeyPairs = { keyPairType: KeyPairType.TUTA_CRYPT, eccKeyPair, kyberKeyPair }
 			const pqFacade = new PQFacade(new WASMKyberFacade(liboqs))
 
-			const encapsulation = await pqFacade.encapsulateEncoded(eccKeyPair, ephemeralKeyPair, pqPublicKeys, bucketKey)
+			const encapsulation = await pqFacade.encapsulateAndEncode(eccKeyPair, ephemeralKeyPair, pqPublicKeys, bucketKey)
 			o(encapsulation).deepEquals(hexToUint8Array(td.pqMessage))
 
 			const decapsulation = await pqFacade.decapsulateEncoded(encapsulation, pqKeyPairs)
-			o(decapsulation).deepEquals(bucketKey)
+			o(decapsulation.decryptedSymKeyBytes).deepEquals(bucketKey)
+			o(decapsulation.senderIdentityPubKey).deepEquals(eccKeyPair.publicKey)
 		}
 	})
 
@@ -347,11 +348,12 @@ o.spec("crypto compatibility", function () {
 			const liboqsFallback = (await (await import("liboqs.wasm")).loadWasm({ forceFallback: true })) as LibOQSExports
 			const pqFacade = new PQFacade(new WASMKyberFacade(liboqsFallback))
 
-			const encapsulation = await pqFacade.encapsulateEncoded(eccKeyPair, ephemeralKeyPair, pqPublicKeys, bucketKey)
+			const encapsulation = await pqFacade.encapsulateAndEncode(eccKeyPair, ephemeralKeyPair, pqPublicKeys, bucketKey)
 			o(encapsulation).deepEquals(hexToUint8Array(td.pqMessage))
 
 			const decapsulation = await pqFacade.decapsulateEncoded(encapsulation, pqKeyPairs)
-			o(decapsulation).deepEquals(bucketKey)
+			o(decapsulation.decryptedSymKeyBytes).deepEquals(bucketKey)
+			o(decapsulation.senderIdentityPubKey).deepEquals(eccKeyPair.publicKey)
 		}
 	})
 

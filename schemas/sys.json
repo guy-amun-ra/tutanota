@@ -315,6 +315,136 @@
 					"info": "ChangeValueCardinality GroupKey/adminGroupKeyVersion/ZeroOrOne."
 				}
 			]
+		},
+		{
+			"version": 102,
+			"changes": [
+				{
+					"name": "AddAssociation",
+					"sourceType": "UserGroupRoot",
+					"info": "AddAssociation UserGroupRoot/groupKeyUpdates/AGGREGATION/2383."
+				},
+				{
+					"name": "AddAssociation",
+					"sourceType": "GroupKeyRotationData",
+					"info": "AddAssociation GroupKeyRotationData/groupKeyUpdatesForMembers/AGGREGATION/2397."
+				}
+			]
+		},
+		{
+			"version": 103,
+			"changes": [
+				{
+					"name": "AddAssociation",
+					"sourceType": "AccountingInfo",
+					"info": "AddAssociation AccountingInfo/appStoreSubscription/LIST_ELEMENT_ASSOCIATION/2424."
+				}
+			]
+		},
+		{
+			"version": 104,
+			"changes": [
+				{
+					"name": "RemoveAssociation",
+					"sourceType": "User",
+					"info": "RemoveAssociation User/phoneNumbers."
+				}
+			]
+		},
+		{
+			"version": 105,
+			"changes": [
+				{
+					"name": "AddValue",
+					"sourceType": "PushIdentifier",
+					"info": "AddValue PushIdentifier/app/2426."
+				}
+			]
+		},
+		{
+			"version": 106,
+			"changes": [
+				{
+					"name": "RemoveValue",
+					"sourceType": "GroupKeyRotationData",
+					"info": "RemoveValue GroupKeyRotationData/userEncGroupKey/2330."
+				},
+				{
+					"name": "RemoveValue",
+					"sourceType": "GroupKeyRotationData",
+					"info": "RemoveValue GroupKeyRotationData/userKeyVersion/2331."
+				},
+				{
+					"name": "AddAssociation",
+					"sourceType": "GroupKeyRotationData",
+					"info": "AddAssociation GroupKeyRotationData/groupMembershipUpdateData/AGGREGATION/2432."
+				}
+			]
+		},
+		{
+			"version": 107,
+			"changes": [
+				{
+					"name": "RenameAttribute",
+					"sourceType": "WebsocketCounterValue",
+					"info": "RenameAttribute WebsocketCounterValue: mailListId -> counterId."
+				}
+			]
+		},
+		{
+			"version": 111,
+			"changes": [
+				{
+					"name": "RenameAttribute",
+					"sourceType": "PubEncKeyData",
+					"info": "RenameAttribute PubEncKeyData: pubEncBucketKey -> pubEncSymKey."
+				},
+				{
+					"name": "RenameAttribute",
+					"sourceType": "PubEncKeyData",
+					"info": "RenameAttribute PubEncKeyData: mailAddress -> recipientIdentifier."
+				},
+				{
+					"name": "AddValue",
+					"sourceType": "PubEncKeyData",
+					"info": "AddValue PubEncKeyData/recipientIdentifierType/2469."
+				},
+				{
+					"name": "ChangeValueCardinality",
+					"sourceType": "UserGroupKeyRotationData",
+					"info": "ChangeValueCardinality UserGroupKeyRotationData/adminGroupEncUserGroupKey/ZeroOrOne."
+				},
+				{
+					"name": "AddAssociation",
+					"sourceType": "UserGroupKeyRotationData",
+					"info": "AddAssociation UserGroupKeyRotationData/pubAdminGroupEncUserGroupKey/AGGREGATION/2470."
+				},
+				{
+					"name": "RemoveValue",
+					"sourceType": "Group",
+					"info": "RemoveValue Group/pubAdminGroupEncGKey/2272."
+				},
+				{
+					"name": "AddAssociation",
+					"sourceType": "Group",
+					"info": "AddAssociation Group/pubAdminGroupEncGKey/AGGREGATION/2475."
+				},
+				{
+					"name": "RemoveValue",
+					"sourceType": "GroupKey",
+					"info": "RemoveValue GroupKey/pubAdminGroupEncGKey/2264."
+				},
+				{
+					"name": "AddAssociation",
+					"sourceType": "GroupKey",
+					"info": "AddAssociation GroupKey/pubAdminGroupEncGKey/AGGREGATION/2476."
+				},
+				{
+					"name": "AddAssociation",
+					"sourceType": "KeyRotation",
+					"info": "AddAssociation KeyRotation/adminGroupKeyAuthenticationData/AGGREGATION/2482."
+				}
+			]
 		}
 	]
 }

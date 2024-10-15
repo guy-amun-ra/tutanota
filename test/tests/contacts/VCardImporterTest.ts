@@ -1,10 +1,15 @@
 import o from "@tutao/otest"
-import { ContactAddressTypeRef, ContactMailAddressTypeRef, ContactPhoneNumberTypeRef, ContactTypeRef } from "../../../src/api/entities/tutanota/TypeRefs.js"
+import {
+	ContactAddressTypeRef,
+	ContactMailAddressTypeRef,
+	ContactPhoneNumberTypeRef,
+	ContactTypeRef,
+} from "../../../src/common/api/entities/tutanota/TypeRefs.js"
 import { neverNull } from "@tutao/tutanota-utils"
-import { vCardFileToVCards, vCardListToContacts } from "../../../src/contacts/VCardImporter.js"
+import { vCardFileToVCards, vCardListToContacts } from "../../../src/mail-app/contacts/VCardImporter.js"
 // @ts-ignore[untyped-import]
-import en from "../../../src/translations/en.js"
-import { lang } from "../../../src/misc/LanguageViewModel.js"
+import en from "../../../src/mail-app/translations/en.js"
+import { lang } from "../../../src/common/misc/LanguageViewModel.js"
 import { createTestEntity } from "../TestUtils.js"
 
 o.spec("VCardImporterTest", function () {
@@ -155,7 +160,6 @@ ADR;TYPE=HOME,PREF:;;Humboldstrasse 5;\\nBerlin;;12345;Deutschland`,
 		let a = ["N:Public\\\\;John\\;Quinlan;Lange;Mr.;Esq.\nBDAY:2016-09-09\nADR:Die Heide 81\\nBasche\nNOTE:Hello World\\nHier ist ein Umbruch"]
 		let contacts = vCardListToContacts(a, "")
 		let b = createTestEntity(ContactTypeRef)
-		b._owner = ""
 		b._ownerGroup = ""
 		b.addresses[0] = {
 			_type: ContactAddressTypeRef,
@@ -181,7 +185,6 @@ ADR;TYPE=HOME,PREF:;;Humboldstrasse 5;\\nBerlin;;12345;Deutschland`,
 		let a = ["N:Public\\\\;John\\;Quinlan;;Mr.;Esq.\nBDAY:2016-09-09\nADR:Die Heide 81;; ;;Basche"]
 		let contacts = vCardListToContacts(a, "")
 		let b = createTestEntity(ContactTypeRef)
-		b._owner = ""
 		b._ownerGroup = ""
 		b.addresses[0] = {
 			_type: ContactAddressTypeRef,
@@ -207,7 +210,6 @@ ADR;TYPE=HOME,PREF:;;Humboldstrasse 5;\\nBerlin;;12345;Deutschland`,
 		let a = ["N:Public\\\\; John\\; Quinlan;;Mr.    ;Esq.\nBDAY: 2016-09-09\nADR: Die Heide 81;;;; Basche"]
 		let contacts = vCardListToContacts(a, "")
 		let b = createTestEntity(ContactTypeRef)
-		b._owner = ""
 		b._ownerGroup = ""
 		b.addresses[0] = {
 			_type: ContactAddressTypeRef,
@@ -240,7 +242,6 @@ ADR;TYPE=HOME,PREF:;;Humboldstrasse 5;\\nBerlin;;12345;Deutschland`,
 		let a = ["EMAIL;TYPE=WORK:HOME@mvrht.net\nADR;TYPE=WORK:Street;HOME;;\nTEL;TYPE=WORK:HOME01923825434"]
 		let contacts = vCardListToContacts(a, "")
 		let b = createTestEntity(ContactTypeRef)
-		b._owner = ""
 		b._ownerGroup = ""
 		b.middleName = ""
 		b.department = ""
